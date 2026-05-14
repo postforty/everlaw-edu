@@ -1,0 +1,45 @@
+
+
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: everlaw_ollama
+    ports:
+      - "11439:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - C:/docker_data/ollama_models:/root/.ollama
+    networks:
+      - everlaw_net
+    restart: unless-stopped
+      
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: everlaw_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: everlaw_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - C:/docker_data/everlaw-edu/postgres_data:/var/lib/postgresql/data
+    networks:
+      - everlaw_net
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: everlaw_redis
+    ports:
+      - "6384:6379"
+    volumes:
+      - C:/docker_data/everlaw-edu/redis_data:/data
+    networks:
+      - everlaw_net
+    restart: unless-stopped
+
+networks:
+  everlaw_net:
+    driver: bridge
