@@ -41,10 +41,10 @@
 
 ## 5. 기술 사양 (Technical Specifications)
 
-### 5.1 Back-end (Spring Boot)
-*   **Architecture**: MSA 지향 구조로 법령 수집 서비스와 콘텐츠 생성 서비스를 분리.
-*   **Data Integrity**: JPA를 활용한 교육 이력 관리 및 콘텐츠 버전 관리(Versioning) 시스템 구축.
-*   **AI Integration**: FastAPI 기반 LLM 서버와 gRPC 또는 REST API를 통한 고성능 통신. LangChain을 활용한 RAG 파이프라인 및 에이전트 워크플로우 구축.
+### 5.1 Back-end (Spring Boot & Python)
+*   **Architecture**: MSA 지향 구조로 법령 수집/AI 서비스(Python)와 비즈니스 서버(Spring Boot) 분리.
+*   **Infrastructure**: Mac Mini 로컬 호스팅 기반의 Docker 컨테이너 운영 (PostgreSQL, Redis).
+*   **AI Integration**: **Google Gemini (3.1 Flash-Lite)** 모델 활용. LangChain을 통한 RAG 파이프라인 및 에이전트 워크플로우 구축.
 
 ### 5.2 Front-end (Flutter)
 *   **Single Codebase**: Android, iOS, Web 동시 대응으로 기업 내 멀티 디바이스 환경 지원.

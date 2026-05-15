@@ -1,5 +1,4 @@
 
-
 services:
   ollama:
     image: ollama/ollama
@@ -29,6 +28,7 @@ services:
       - everlaw_net
     restart: unless-stopped
 
+  # Caching & Task Queue: Redis
   redis:
     image: redis:alpine
     container_name: everlaw_redis
