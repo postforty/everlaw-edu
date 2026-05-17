@@ -1,6 +1,6 @@
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
-from scanner.law_scanner import LawScanner
+from app.ingestion.scheduler import LawScanner
 from datetime import datetime
 
 def job_scan_laws():

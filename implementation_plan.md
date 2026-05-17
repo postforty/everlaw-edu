@@ -1,124 +1,110 @@
-# [구현 계획서] EverLaw Edu 솔루션 개발 계획
+# [구현 계획서] EverLaw Edu 솔루션 개발 계획 (개정판)
 
 **작성자**: Senior Full-Stack Engineer
-**목적**: PRD 및 기능 명세서를 바탕으로, 기 구축된 AI 엔진을 확장하고 Spring Boot 백엔드와 Flutter 프론트엔드를 통합하여 전체 시스템을 완성하기 위한 단계별 실행 계획을 정의합니다.
+**목적**: 제품 요구사항정의서(PRD) 및 기능 명세서를 바탕으로, 최신 법령 전문 DB를 지식 원천(Ground Truth)으로 삼아 교육용 강의안과 평가 퀴즈를 무(無)에서 유(유)로 자율 생산(Fact-based Content Factory)하는 하이브리드 아키텍처 구축의 상세 마일스톤과 통합 방안을 정의합니다.
 
 ---
 
 ## 1. 개요 및 현재 시스템 상태
-현재(Phase 1 초기) 로컬 Mac Mini 환경에서 컨테이너 기반 인프라(Ollama, PostgreSQL/pgvector, Redis) 구성이 완료되었으며, Python 기반 `ai-engine` 스켈레톤(FastAPI, LangGraph 기반 RAG, 법령 스캐너)이 일부 구현된 상태입니다. 
+현재 로컬 Mac Mini 환경에서 PostgreSQL(pgvector), Ollama(bge-m3), Redis 컨테이너 인프라가 가동 중이며, Python 기반 `ai-engine`에서 **최신 법령 전문 DB 실시간 SQL-level Upsert 적재 ➡️ RAG 기반 자율 콘텐츠 생산 ➡️ AI 자가 팩트체크 검증 노드**로 이어지는 핵심 AI 두뇌의 구축과 로컬 E2E 검증이 대성공으로 성료된 상태입니다.
 
 **향후 핵심 과제**:
-1. AI 엔진의 실질적인 차분 분석 로직 완성
-2. 관리자/학습자 도메인을 관리할 Spring Boot 비즈니스 서버 구축
-3. 멀티 플랫폼(Android/iOS/Web) 지원을 위한 Flutter 앱 개발
-4. 시스템 간 유기적인 연동 및 통합 테스트
+1. 자율 생산된 교육 콘텐츠 및 관리자 대기열을 처리할 **Spring Boot 비즈니스 백엔드 서버 구축** (JPA Auditing 및 스냅샷 버전 관리)
+2. 법령 조문 팩트(Left)와 AI 생산 교안(Right)을 정교하게 비교 대조하며 릴리스하는 **Flutter 기반 Side-by-Side Reference & Content UI 개발**
 
 ---
 
 ## 2. 아키텍처 및 기술 스택 
 
-### 2.1 인프라 및 통신
-- **Local Hosting**: Mac Mini (Docker Compose 기반)
-- **Database**: PostgreSQL 16 (pgvector), Redis (Cache & Queue)
-- **통신 규격**: REST API 및 비동기 메시지 큐 (Redis Pub/Sub)
+### 2.1 인프라 및 데이터베이스
+- **Local Hosting**: Mac Mini (Docker Compose 컨테이너 인프라)
+- **Database**: PostgreSQL 16 (pgvector), Redis (Cache & Queue & Pub/Sub)
+- **RAG 저장 구조**: 
+  - `law_documents`: 깃허브 및 국가 법령 정보에서 수집한 최신 실질 조문 전문 컬렉션 (Ground Truth)
+  - `curriculum_documents`: AI가 최신 법령을 마중물로 삼아 자율 생산해낸 교육 마크다운 강의안/퀴즈 컬렉션
 
-### 2.2 AI Engine (존재)
-- **Framework**: Python 3.12+, FastAPI
+### 2.2 AI Engine (구현 완료)
+- **Framework**: Python 3.12, FastAPI
 - **AI/LLM**: Google Gemini 3.1 Flash-Lite, Ollama (bge-m3 Embedding)
-- **Workflow**: LangChain, LangGraph
+- **Workflow**: LangChain, LangGraph 기반의 자율 에이전트 감사 노드 구성
 
-### 2.3 Back-end (신규)
-- **Framework**: Spring Boot 3.x, Java 21 (또는 Kotlin)
-- **ORM / DB**: Spring Data JPA, Hibernate, PostgreSQL
+### 2.3 Back-end (신규 구축 예정)
+- **Framework**: Spring Boot 3.x, Java 21
+- **ORM / DB**: Spring Data JPA, Hibernate, PostgreSQL Driver
 - **Security**: Spring Security, JWT (인증/인가)
 
-### 2.4 Front-end (신규)
+### 2.4 Front-end (신규 구축 예정)
 - **Framework**: Flutter 3.x (Dart)
-- **State Management**: Provider 또는 Riverpod
-- **UI/UX**: Markdown 렌더링 엔진 (flutter_markdown), 다크모드 지원
+- **State Management**: Riverpod (상태 관리 표준화)
+- **UI Renderer**: Markdown 렌더링 엔진 (flutter_markdown)
 
 ---
 
 ## 3. 단계별 구현 계획 (Phased Implementation Plan)
 
-### Phase 1: AI 엔진 고도화 및 데이터 정제 (Week 1-2)
-현재 구현된 스켈레톤 코드를 실제 비즈니스 로직으로 채우는 단계입니다.
+### Phase 1: AI 엔진 고도화 및 최신 법령 DB 적재 (완료)
+최신 법령을 Ground Truth 삼아 콘텐츠를 창작 및 사실 확인 검증하는 핵심 Python API 시스템을 완성하는 단계입니다.
 
-*   **1.1 스캐너 고도화 (`scanner_main.py` & `law_scanner.py`)**
-    *   [x] Github `legalize-kr` 레포지토리의 커밋 데이터로부터 추가/삭제된 조항(Diff) 텍스트를 정확하게 추출하는 로직 구현
-    *   [x] 추출된 데이터를 Vector DB에 Embedding하여 적재하는 파이프라인 완성
-*   **1.2 지능형 차분 분석 및 RAG 구현 (`rag_engine.py`)**
-    *   [x] 개정된 법령(Context)이 입력되면, Vector DB에서 기존 교육 커리큘럼(Markdown)을 검색(Retrieval)
-    *   [x] Gemini 모델을 활용해 어느 섹션을 어떻게 수정해야 하는지 구체적인 JSON 형태의 응답(차분 결과)을 생성하도록 프롬프트 튜닝
-*   **1.3 AI 검증(Validation) 노드 추가**
-    *   [x] LangGraph 워크플로우에 `validate` 노드를 추가하여, 생성된 수정안이 원본 법령을 훼손하지 않는지 환각(Hallucination) 검사 수행
+*   **1.1 실시간 법령 수집 및 SQL-level Upsert (`law_scanner.py` & `rag_engine.py`) [x]**
+    *   [x] **대한민국 법령 맞춤형 시맨틱 청킹 (조 단위 완결성 보존)**: `##### 제N조 (제목)`로 설계된 3대 법령의 5단계 마크다운 헤더 규격을 역추적하여 **조(Article) 단위의 물리적 시맨틱 독립 바운더리를 확립한 청킹 아키텍처** 완성. LLM의 정보 밀도와 RAG 생성 단계의 맥락 단절 및 환각(Hallucination)을 근본적으로 차단하기 위해, 자잘하게 쪼개는 2차 물리 캐릭터 청킹을 완전히 배제하고 의미적 완결체인 **'조(Article) 단위의 온전한 바운더리'**를 그대로 pgvector DB에 최종 청크로 동기화 적재함.
+    *   [x] **가지조항 및 서식 이스케이프 격퇴**: `제4조의2`와 같은 가지조항 Regex 검출 보강, 그리고 `1\.`, `가\.` 같은 마크다운 백슬래시 이스케이프 및 `**①**` 볼드체 항 번호 예외 처리를 무결점으로 돌파하는 **초고성능 정밀 주소 파서 헬퍼** 장착.
+    *   [x] **실시간 스캐너 RAG 아키텍처 대통합**: 벌크 시드 적재기(`seed_target_law.py`)와 실시간 변경분 감지기(`law_scanner.py`)가 동일한 조/항/호/목 파서를 연동하게 함으로써, **영구적으로 동일하게 필터링 가능한 100% 정렬된 RAG 메타데이터 일관성** 확립.
+    *   [x] **SQL-level 멱등성 업서트(Upsert)**: LangChain 제약 조건을 무력화하고 중복 인서트를 원천 배제하기 위해, 적재 전 기존 `custom_id`를 SQL DELETE 명령어로 강제 청소 후 인서트하는 물리 업서트 파이프라인 완수 (ensure_ascii=False 옵션을 적용하여 JSON 직렬화 한글 깨짐 방지 및 쿼리 속도 튜닝).
+*   **1.2 최신 법령 DB 기반 자율 콘텐츠 생산 RAG (`rag_engine.py`) [x]**
+    *   [x] `law_documents` 컬렉션의 가장 신선한 법령 조문을 RAG 지식 소스로 사용하여, 스토리텔링 기법과 모의 평가 퀴즈가 결합된 교육용 마크다운 교안을 무(無)에서 유(유)로 자율 생산하는 생성 체인 구축 완료.
+*   **1.3 AI 검증(Validation) 감사 노드 추가 [x]**
+    *   [x] LangGraph 워크플로우에 `validate` 자가 감사 노드를 배치하여, 생산된 문장의 숫자나 의도가 원본 법령 지식과 1대1 교차 사실 대조를 통과(환각 지수 0.0%)하는지 검증하는 자가 팩트체크 시스템 성료.
 
-### Phase 2: Spring Boot 비즈니스 서버 구축 (Week 3-4)
-MSA 아키텍처의 중심 역할을 할 API 서버를 개발합니다.
+### Phase 2: Spring Boot 비즈니스 서버 구축 (진행 예정 / Week 3-4)
+자율 생산된 교육 자료들의 생명주기를 영구 관리하고 Flutter 클라이언트를 서빙할 백엔드를 개발합니다.
 
 *   **2.1 프로젝트 초기화 및 DB 설계**
-    *   [ ] Spring Boot 프로젝트 세팅 (JPA, Web, Security, PostgreSQL 드라이버)
-    *   [ ] Entity 설계: `Member`(사용자), `Curriculum`(교육 과정), `Lesson`(학습 단위), `ContentVersion`(콘텐츠 버전, JPA Auditing 적용), `ApprovalRequest`(관리자 승인 대기열)
-*   **2.2 AI Engine 연동 및 웹훅(Webhook) API**
-    *   [ ] AI Engine이 백엔드로 분석 완료 및 수정안을 전달할 콜백(Callback) API 엔드포인트 구현
-    *   [ ] `ApprovalRequest` 생성 로직 및 관리자에게 알림을 보내는 Redis Pub/Sub 로직 구성
+    *   [ ] Spring Boot 프로젝트 세팅 (JPA, Web, Security, PostgreSQL 드라이버 연동)
+    *   [ ] JPA Entity 설계: `Member`(사용자), `Curriculum`(교육 카테고리/과정), `Lesson`(AI 자율 생산 교안 마크다운 수록), `ApprovalRequest`(콘텐츠 생산 후 관리자 검토 대기열), `ContentSnapshot`(특정 릴리스 버전 보존 스냅샷)
+*   **2.2 AI Engine 콘텐츠 생산 연동 및 웹훅(Webhook) API**
+    *   [ ] 교육 담당자가 생산 트리거 시 FastAPI AI 엔진을 호출하여 교안을 동적 창작하고, 결과를 백엔드로 수신하여 `ApprovalRequest`로 전환하는 연동 로직 구현.
+    *   [ ] Redis Pub/Sub과 FCM 기반 실시간 알림 로직 구성.
 *   **2.3 프론트엔드 제공 API 개발**
-    *   [ ] 인증(Login/Token) 및 권한 관리(Admin/Learner)
-    *   [ ] 교육 과정 목록, 강의 상세(Markdown), 승인 대기열 조회/처리 API 구현
+    *   [ ] JWT 기반 인증/인가 및 직무 카테고리 권한 관리.
+    *   [ ] 대기열 조회/승인/반려 처리 및 릴리스 배포 API 구현.
 
 ### Phase 3: Flutter 프론트엔드 구축 (Week 5-6)
 하나의 코드베이스로 관리자 웹 대시보드와 학습자 모바일 앱을 구성합니다.
 
 *   **3.1 공통 및 코어 모듈 구성**
-    *   [ ] Flutter 프로젝트 구조 세팅 (Domain-Driven 폴더 구조, 라우팅 세팅)
-    *   [ ] API 클라이언트 (Dio) 및 상태 관리(Riverpod) 구성
-    *   [ ] Markdown 렌더링 전용 커스텀 위젯 개발 (코드 블록, 인용구, 강조 등 테마 적용)
-*   **3.2 관리자 대시보드 (Web Target)**
-    *   [ ] 변경된 교육 콘텐츠의 Before & After를 보여주는 Side-by-Side Diff 뷰어 구현
-    *   [ ] 콘텐츠 승인/반려 워크플로우 UI 및 상태 업데이트 기능
+    *   [ ] Flutter 프로젝트 구조 세팅 및 Riverpod 기반 상태 관리 모듈 구성.
+    *   [ ] 마크다운 동적 파싱 렌더러 커스텀 위젯 개발.
+*   **3.2 법령-교안 대조 승인 뷰어 (Web Target)**
+    *   [ ] **좌측(최신 법령 조문 팩트) vs 우측(AI가 생산해낸 마크다운 교안 및 퀴즈) Side-by-Side Reference & Content Viewer UI** 구현.
+    *   [ ] AI 자가 검증 결과(Hallucination Score) 및 감사 소견 시각적 렌더링.
 *   **3.3 학습자용 앱 (Mobile Target)**
-    *   [ ] 사용자 맞춤형 교육 커리큘럼 대시보드
-    *   [ ] FCM 연동을 통한 법령 개정 및 신규 교육 업데이트 푸시 알림 수신
+    *   [ ] 최신 생산 릴리스 완료 교안 수강 및 실시간 모의 퀴즈 채점 피드백 UI.
+    *   [ ] FCM 연동 맞춤형 직무 푸시 알림 수신.
 
 ### Phase 4: 통합 테스트 및 배포 안정화 (Week 7-8)
-전체 시스템의 유기적인 동작을 검증합니다.
 
 *   **4.1 E2E 통합 테스트**
-    *   [ ] 모의 법령 개정 이벤트 발생 -> AI 차분 분석 -> 백엔드 승인 요청 -> 관리자 웹 승인 -> 학습자 앱 알림 및 콘텐츠 업데이트의 전체 플로우 테스트
+    *   [ ] 법령 업데이트 감지 ➡️ 최신 법령 DB Upsert ➡️ 관리자 대시보드에서 생성 클릭 ➡️ AI 자율 생산 및 자가 검증 ➡️ 관리자가 대조 화면에서 최종 승인 ➡️ 스냅샷 영구 저장 및 학습자 앱 배포/알림 E2E 종합 검증.
 *   **4.2 최적화 및 안정성 확보**
-    *   [ ] Redis 캐시를 활용한 API 응답 속도 개선
-    *   [ ] Docker Compose 환경의 서비스 간 의존성(Depends_on) 및 헬스체크 튜닝
+    *   [ ] Docker Compose 환경 서비스 헬스체크 고도화.
 
 ---
 
 ## 4. 데이터베이스 스키마 설계 요약 (Core Entities)
 
 *   **`member`**: id, email, password, role(ADMIN/LEARNER), job_category, created_at
-*   **`curriculum`**: id, title, description, target_job_category, is_active
-*   **`lesson`**: id, curriculum_id, order_index, title, content_markdown (최신본)
-*   **`content_history`**: id, lesson_id, previous_markdown, new_markdown, changed_law_info, approved_by, approved_at
-*   **`approval_request`**: id, lesson_id, ai_generated_markdown, diff_summary, status(PENDING/APPROVED/REJECTED), created_at
+*   **`curriculum`**: id, title, description, category(예: 안전보건, 근로기준), target_job_category
+*   **`lesson`**: id, curriculum_id, title, content_markdown (최신 생산본), associated_law_reference (RAG의 근거가 된 최신 법정 조항 고유 식별자 키)
+*   **`content_snapshot`**: id, lesson_id, curriculum_title, lesson_title, content_markdown, approved_by, approved_at (법적 감사 보존용 영구 데이터)
+*   **`approval_request`**: id, lesson_id, law_reference, ai_generated_markdown, validation_details, hallucination_score, status(PENDING/APPROVED/REJECTED), created_at
 
 ---
 
-## 5. 서비스 간 API 연동 규격 (Internal)
+## 5. 서비스 간 API 연동 규격
 
-1.  **AI Engine -> Spring Boot (Webhook)**
+1.  **AI Engine -> Spring Boot (Proposed Webhook)**
     *   `POST /api/internal/content/proposed`
-    *   Body: `{ "lessonId": 123, "newContent": "...", "diffSummary": "...", "lawReference": "..." }`
-2.  **Spring Boot -> AI Engine (Trigger/Test)**
-    *   `POST /generate-content` (현재 `main.py`에 존재)
-
----
-
-## 6. 핵심 리스크 및 마일스톤
-
-*   **리스크 1: AI 환각(Hallucination)에 의한 잘못된 법령 해석**
-    *   **대책**: Phase 1의 검증 노드(Validation Node) 프롬프트를 엄격히 통제하며, Phase 3에서 관리자 화면의 Diff Viewer 가독성을 극대화하여 인적 검토를 용이하게 함.
-*   **리스크 2: 초기 프론트엔드 구축 공수 부족**
-    *   **대책**: Flutter Web과 App의 공통 UI 컴포넌트(Markdown Renderer)부터 최우선 개발하여 중복 작업을 방지.
-*   **마일스톤**:
-    *   `M1` (Week 2): AI Engine이 법령 변화를 감지하고 마크다운 초안을 생성해내는 PoC 완료
-    *   `M2` (Week 4): 백엔드 API 연동 완료 및 Postman 기반 승인 프로세스 테스트
-    *   `M3` (Week 6): Flutter 통합 및 데모 시나리오 완수
+    *   Body: `{ "lessonId": 123, "lawReference": "...", "newContent": "...", "validationDetails": "...", "hallucinationScore": 0.0 }`
+2.  **Spring Boot -> AI Engine (Generate Trigger)**
+    *   `POST /generate-content`
+    *   Body: `{ "law_content": "...", "metadata": { "lesson_id": 123 } }`

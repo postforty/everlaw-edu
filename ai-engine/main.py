@@ -1,106 +1,67 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
+import os
+import sys
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
 
-app = FastAPI(title="EverLaw Edu AI Engine", version="0.1.0")
+# ai-engine 폴더 참조 추가 (import 경로 보장)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-class LawChangeRequest(BaseModel):
-    law_id: str
-    content: str
-    metadata: Optional[dict] = None
+from app.ingestion.scheduler import LawScanner
+from app.api.v1.endpoints import router as api_router
+
+# =====================================================================
+# FastAPI Lifespan Context Manager (SaaS 원스톱 통합)
+# =====================================================================
+
+def job_scan_laws():
+    """백그라운드에서 주기적으로 국가 법령 RSS 및 GitHub API를 상시 모니터링하여 벡터 DB 자동 Upsert"""
+    print(f"⏰ [{datetime.now()}] --- [STARTING BACKGROUND LAW SCAN JOB (REFACTORED)] ---")
+    try:
+        scanner = LawScanner()
+        new_laws = scanner.run_all_scanners()
+        print(f"✅ [{datetime.now()}] --- [LAW SCAN COMPLETE: {len(new_laws)} new law(s) detected] ---")
+    except Exception as e:
+        print(f"❌ [{datetime.now()}] --- [BACKGROUND LAW SCAN FAILED: {str(e)}] ---")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # [Startup Event]: FastAPI 서버 기동 즉시 백그라운드 스케줄러 연동 개시
+    scheduler = BackgroundScheduler()
+    # 1시간마다 실시간 스캐너 실행 (배경 데몬)
+    scheduler.add_job(job_scan_laws, 'interval', hours=1)
+    scheduler.start()
+    print("🚀 [성공] FastAPI AI Engine 구동 완료 및 실시간 법률 스캐너 백그라운드 연동 개시!")
+    
+    # 즉시 테스트용 첫 1회 스캔 실행 (최초 구동 시 즉시 데이터 임베딩 적재 및 신선도 세팅)
+    job_scan_laws() 
+
+    yield # FastAPI 서버가 기동을 유지하며 API 요청을 동기 서빙하는 영역
+
+    # [Shutdown Event]: FastAPI 서버 정상 종료 시 스케줄러를 Graceful하게 자원 해제
+    scheduler.shutdown()
+    print("🛑 백그라운드 스케줄러 스레드 안전하게 해제 완료 (Graceful Shutdown)")
+
+# Lifespan이 접합된 FastAPI 앱 기동
+app = FastAPI(
+    title="EverLaw Edu AI Engine",
+    description="최신 법령 DB를 지식의 원천으로 삼아 교육 콘텐츠를 자율 생산하고 검증하는 차세대 컴플라이언스 AI 엔진 (Refactored Ingestion-Serving Architecture)",
+    version="0.2.0",
+    lifespan=lifespan
+)
+
+# API 엔드포인트 라우터 연결
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "EverLaw Edu AI Engine is running"}
-
-from rag_engine import retrieve_affected_curriculum, add_curriculum_to_vector_store
-
-@app.post("/analyze-impact")
-async def analyze_impact(request: LawChangeRequest):
-    try:
-        # 개정 법령 본문을 기준으로 pgvector에 등록된 연관 교육 커리큘럼(강의) 검색
-        affected_lessons = retrieve_affected_curriculum(request.content)
-        
-        # 검색 결과 유무에 따른 영향 수준 결정
-        impact_level = "High" if affected_lessons else "Low"
-        affected_modules = [f"Lesson {l['lesson_id']}: {l['title']}" for l in affected_lessons]
-        
-        return {
-            "law_id": request.law_id,
-            "impact_level": impact_level,
-            "affected_modules": affected_modules,
-            "details": affected_lessons,
-            "status": "Success"
-        }
-    except Exception as e:
-        return {
-            "law_id": request.law_id,
-            "impact_level": "Medium (Fallback)",
-            "affected_modules": ["Error occurred during vector search"],
-            "details": [],
-            "error": str(e),
-            "status": "Fallback"
-        }
-
-class CurriculumSeedRequest(BaseModel):
-    lesson_id: int
-    curriculum_id: int
-    title: str
-    content: str
-
-@app.post("/seed-curriculum")
-async def seed_curriculum(request: CurriculumSeedRequest):
-    """테스트용 기존 교육 커리큘럼을 RAG 벡터 DB에 적재하는 API"""
-    try:
-        metadata = {
-            "lesson_id": request.lesson_id,
-            "curriculum_id": request.curriculum_id,
-            "title": request.title
-        }
-        add_curriculum_to_vector_store(request.content, metadata)
-        return {
-            "status": "Success",
-            "message": f"Curriculum Lesson '{request.title}' successfully seeded."
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from rag_engine import generate_rag_content
-
-@app.post("/generate-content")
-async def generate_content(request: LawChangeRequest):
-    try:
-        # RAG 엔진 호출 (차분 분석 & 구조화 JSON 및 마크다운 동시 생성)
-        result = generate_rag_content(request.content)
-        return {
-            "law_id": request.law_id,
-            "analysis_result": result["analysis_result"],
-            "validation_result": result["validation_result"],
-            "markdown_report": result["markdown_report"],
-            "status": "Success"
-        }
-    except Exception as e:
-        # 인프라 미준비 시 예외 처리 (PoC 단계 Fallback)
-        return {
-            "law_id": request.law_id,
-            "analysis_result": {
-                "lesson_id": -1,
-                "title": "Fallback Mode",
-                "impact_level": "Medium",
-                "modifications": [
-                    {
-                        "is_modification_required": True,
-                        "target_section": "전체 수동 검토",
-                        "original_text": "오프라인 모드",
-                        "proposed_text": request.content,
-                        "reason": f"인프라 연결 실패로 인한 임시 폴백: {str(e)}"
-                    }
-                ]
-            },
-            "markdown_report": f"[PoC Fallback] RAG 엔진 예외 발생: {str(e)}\n내용: {request.content[:100]}...",
-            "status": "Partial Success (Fallback)"
-        }
+    return {
+        "message": "EverLaw Edu AI Engine is running",
+        "version": "0.2.0",
+        "scheduler_status": "Active & Running in Background"
+    }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

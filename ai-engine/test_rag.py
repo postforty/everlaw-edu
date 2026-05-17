@@ -11,8 +11,10 @@ sys.path.append("c:\\Users\\dandycode\\Documents\\GitHub\\everlaw-edu\\ai-engine
 load_dotenv(dotenv_path="c:\\Users\\dandycode\\Documents\\GitHub\\everlaw-edu\\ai-engine\\.env")
 
 try:
-    from rag_engine import add_curriculum_to_vector_store, retrieve_affected_curriculum, generate_rag_content
-    from scanner.law_scanner import LawScanner, extract_added_text_from_patch
+    from app.core.database import add_curriculum_to_vector_store, retrieve_affected_curriculum
+    from app.services.graph_workflow import generate_rag_content
+    from app.ingestion.scheduler import LawScanner
+    from app.ingestion.parser import extract_added_text_from_patch
     print("✅ RAG Engine 및 Law Scanner 모듈 로드 완료!")
 except ImportError as e:
     print(f"❌ RAG Engine 및 Scanner 로드 실패: {e}")

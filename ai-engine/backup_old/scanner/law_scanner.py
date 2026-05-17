@@ -12,6 +12,19 @@ load_dotenv()
 REDIS_URL = os.getenv("REDIS_URL")
 r = redis.from_url(REDIS_URL)
 
+def extract_added_text_from_patch(patch_text: str) -> str:
+    """Git diff 패치 텍스트에서 새로 추가된(실질 법령 개정) 라인들만 정제하여 추출"""
+    if not patch_text:
+        return ""
+    added_lines = []
+    for line in patch_text.split('\n'):
+        if line.startswith('+') and not line.startswith('+++'):
+            cleaned = line[1:].strip()
+            # 마크다운 헤더 기호만 있거나 무의미한 빈 줄은 제외하고 실질적인 법 조문 텍스트만 모음
+            if cleaned and not cleaned.startswith('#'):
+                added_lines.append(cleaned)
+    return "\n".join(added_lines)
+
 class LawScanner:
     def __init__(self):
         self.moel_rss_url = os.getenv("MOEL_RSS_URL")
@@ -52,26 +65,13 @@ class LawScanner:
         print(f"[{datetime.now()}] Scanning National Law API for: {query}")
         return []
 
-def extract_added_text_from_patch(patch_text: str) -> str:
-    """Git diff 패치 텍스트에서 새로 추가된(실질 법령 개정) 라인들만 정제하여 추출"""
-    if not patch_text:
-        return ""
-    added_lines = []
-    for line in patch_text.split('\n'):
-        if line.startswith('+') and not line.startswith('+++'):
-            cleaned = line[1:].strip()
-            # 마크다운 헤더 기호만 있거나 무의미한 빈 줄은 제외하고 실질적인 법 조문 텍스트만 모음
-            if cleaned and not cleaned.startswith('#'):
-                added_lines.append(cleaned)
-    return "\n".join(added_lines)
-
     def scan_legalize_kr_github_api(self):
         """GitHub API를 통해 저장소의 최신 변경 사항 감지 및 RAG 벡터 DB 자동 적재"""
         print(f"[{datetime.now()}] Scanning GitHub API: {self.github_repo}")
         try:
             repo = self.gh.get_repo(self.github_repo)
             # 마지막 5개의 커밋 확인
-            commits = repo.get_commits()[:5]
+            commits = [c for c in repo.get_commits()[:5]] # PaginatedList 슬라이싱 슬라이스 타입 len 회피
             new_changes = []
 
             for commit in commits:
@@ -84,17 +84,46 @@ def extract_added_text_from_patch(patch_text: str) -> str:
                         if file.filename.endswith('.md') and file.patch:
                             added_text = extract_added_text_from_patch(file.patch)
                             if added_text:
-                                metadata = {
-                                    "source": "GitHub (legalize-kr)",
+                                # 파일 경로 분석을 통한 법령 이름 및 종류 자동 매핑
+                                # 예: kr/산업안전보건법/법률.md -> law_name="산업안전보건법", law_type="법률"
+                                law_name = "산업안전보건법"
+                                law_type = "법률"
+                                
+                                if "시행령" in file.filename:
+                                    law_type = "시행령"
+                                elif "시행규칙" in file.filename:
+                                    law_type = "시행규칙"
+                                    
+                                if "산업안전보건법" not in file.filename:
+                                    # 파일 경로에서 법령명 유연하게 추출
+                                    parts = file.filename.split('/')
+                                    if len(parts) >= 2:
+                                        law_name = parts[-2]
+
+                                initial_metadata = {
+                                    "source": f"GitHub ({self.github_repo})",
                                     "sha": commit.sha,
+                                    "commit_sha": commit.sha,
                                     "filename": file.filename,
+                                    "law_name": law_name,
+                                    "law_type": law_type,
                                     "commit_message": commit.commit.message.split('\n')[0],
                                     "url": commit.html_url
                                 }
+                                
+                                # 💡 [아키텍처 대통합]: 실시간 스캐너 감지 텍스트 역시 seed_target_law의 고성능 파서를 통과시켜
+                                # 조, 항, 호, 목 메타데이터를 정밀 이식함으로써 RAG QA 검색 일관성을 100% 보장합니다!
+                                try:
+                                    from seed_target_law import extract_fine_grained_law_metadata
+                                    fine_metadata = extract_fine_grained_law_metadata(added_text, initial_metadata)
+                                except Exception as parser_err:
+                                    print(f"[{datetime.now()}] Fine-grained parser import failed or errored: {parser_err}")
+                                    fine_metadata = initial_metadata
+                                
                                 # 벡터스토어 적재 파이프라인 연동
                                 try:
                                     from rag_engine import add_document_to_vector_store
-                                    add_document_to_vector_store(added_text, metadata)
+                                    add_document_to_vector_store(added_text, fine_metadata)
                                 except Exception as ve:
                                     print(f"[{datetime.now()}] Failed to load to vector DB: {ve}")
 
@@ -103,7 +132,7 @@ def extract_added_text_from_patch(patch_text: str) -> str:
                         "sha": commit.sha,
                         "url": commit.html_url,
                         "files": files,
-                        "source": "GitHub (legalize-kr)"
+                        "source": f"GitHub ({self.github_repo})"
                     }
                     new_changes.append(change_item)
                     r.setex(f"law_scan:gh:{content_id}", 2592000, "seen")
