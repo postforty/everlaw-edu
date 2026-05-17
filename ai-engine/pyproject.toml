@@ -18,5 +18,6 @@ dependencies = [
     "pydantic>=2.13.4",
     "pygithub>=2.9.1",
     "python-dotenv>=1.2.2",
+    "redis>=7.4.0",
     "uvicorn>=0.47.0",
 ]
