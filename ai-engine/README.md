@@ -76,11 +76,12 @@ graph TD
 
 ## 3. 핵심 기능 명세
 
-### 3.1 실시간 스캐너 및 물리 SQL-level Upsert
-*   [app/ingestion/scheduler.py](./app/ingestion/scheduler.py)는 고용노동부 RSS 및 지정 GitHub 저장소의 커밋 패치로부터 최신 법령 데이터를 수집합니다.
-*   [app/ingestion/parser.py](./app/ingestion/parser.py)의 정밀 파서가 `##### 제N조 (제목)` 마크다운 규칙과 **볼드체 항 번호 기호(①~㊿)**, 가지조항(`제4조의2` 등)을 고성능 정규표현식으로 정밀 가공합니다.
-*   **조(Article) 단위 완결 청킹 아키텍처**: 자잘한 2차 물리 캐릭터 청킹을 완전히 제외하고, `##### 제N조`로 나누어진 대한민국 법령의 조항 단위 자체를 최종 청크로 pgvector DB에 적재합니다. 이는 정보 밀도의 왜곡을 완전히 없애 RAG 검색 후 에이전트 생성 단계의 맥락 손실 및 환각을 원천 방어합니다.
-*   LangChain DB 적재 한계를 극복하기 위해, [app/core/database.py](./app/core/database.py)에서는 데이터를 임베딩하기 직전에 기존 `custom_id`를 SQL DELETE 명령으로 청소해낸 후 깨끗하게 `INSERT` 함으로써 중복 누적을 원천 배제하는 멱등성 Upsert를 실현합니다.
+### 3.1 실시간 스캐너 및 스마트 해시 CDC 업서트
+*   [app/ingestion/scheduler.py](./app/ingestion/scheduler.py)는 고용노동부 RSS 및 지정 GitHub 저장소의 커밋 변경을 감지합니다.
+*   **실시간 전체 청킹 파이프라인**: 깃허브 변경 감지 시, 불완전하고 취약한 패치 기반의 조항 번호 추출 방식을 탈피하고 **파일 전문(Whole File)을 실시간 다운로드**하여 공통 파이프라인인 `split_law_markdown_to_documents`로 유도합니다.
+*   [app/ingestion/parser.py](./app/ingestion/parser.py)의 정밀 파서가 `##### 제N조 (제목)` 마크다운 규칙과 **볼드체 항 번호 기호(①~㊿)**, 가지조항(`제4조의2` 등)을 고성능 정규표현식으로 정밀 가공하여 **조(Article) 단위 완결 청크**를 배출합니다.
+*   **스마트 SHA-256 해시 CDC (Change Data Capture)**: [app/core/database.py](./app/core/database.py)에서는 각 청크의 본문 내용에 대한 SHA-256 해시 값을 산출하여, 적재 시점에 데이터베이스 내부의 `cmetadata` 필드 내 `chunk_hash` 정보와 대조합니다. 해시가 완벽히 동일하다면 **해당 청크의 임베딩 생성 API 호출과 트랜잭션을 통째로 건너뛰어(SKIP)** 성능과 인프라 비용 효율성을 극대화합니다.
+*   **물리 SQL-level 멱등성 갱신**: 해시 값 변경이 확인되면, 불변의 고유 비즈니스 키(`law_{law_name}_{article}`)를 기준으로 기존 구버전 레코드를 데이터베이스에서 **물리적으로 완전히 선삭제(DELETE)**한 후 깨끗하게 `INSERT`함으로써, 중복 누적 및 유령 RAG 데이터를 0.0%로 완벽 차단합니다.
 
 ### 3.2 법령 근반 자율 콘텐츠 생산 엔진
 *   [app/services/generator.py](./app/services/generator.py)는 pgvector에서 추출한 초신선 법률 지식을 Context로 주입받아, 딱딱한 조문 텍스트를 생생한 현장 가상 시나리오와 안전 행동 수칙으로 각색 가공하여 고품질의 마크다운 강의 교안을 동적 배출합니다.
@@ -118,12 +119,16 @@ MOEL_RSS_URL="https://www.moel.go.kr/news/notice/noticeList.do"
 ```
 
 ### 4.3 초기 대한민국 3대 법령 데이터 벌크 시딩 (Seeding)
-처음 프로젝트 구동 시, 원격 깃허브 저장소로부터 최신 산업안전보건법 3대 조문(법률, 시행령, 시행규칙)을 다운로드하여 마크다운 시맨틱 청킹 가공 후 벡터 데이터베이스에 시딩하는 스크립트를 기동합니다.
+처음 프로젝트 구동 시, 원격 깃허브 저장소로부터 최신 산업안전보건법 3대 조문(법률, 시행령, 시행규칙) 전문을 마크다운 계층형 공통 파서인 `split_law_markdown_to_documents`로 정교하게 분석 가공하여 벡터 데이터베이스에 시딩하는 스크립트를 기동합니다.
+
+*   **안전한 사전 클렌징**: 시딩 재실행 시 기존 비즈니스 고유 키 레코드가 완전 리셋되도록 데이터베이스 사전 클렌징 쿼리를 수행해 잔여 유령 쓰레기 적재분을 완전히 소거합니다.
+*   **비조항 청크 충돌 해결**: 조 번호가 존재하지 않는 부칙, 목적 등의 특수 청크에 대해 `seed_{law_name}_{law_type}_{chunk_idx}` 형태의 결정론적 fallback `law_id`를 임포트 주입하여, 추후 실시간 스캐너 감지 및 병합 시 식별자 충돌과 중복 누적을 원천 방어합니다.
 
 ```cmd
 # Windows CMD 및 모든 쉘 환경 벌크 시딩 실행
 uv run python -X utf8 scripts/seed.py
 ```
+
 
 ### 4.4 서버 가동 및 수집 데몬 활성화
 FastAPI 서버 기동 단 한 번의 명령으로 내부 백그라운드 스케줄러(APScheduler) 스레드까지 원클릭 통합 가동됩니다. 
