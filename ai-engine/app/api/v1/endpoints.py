@@ -6,6 +6,9 @@ from app.services.graph_workflow import generate_rag_content
 
 router = APIRouter()
 
+print(f"🔥 [물리 임포트 추적] endpoints.py 로드 완료! (물리 경로: {__file__})")
+
+
 class LawChangeRequest(BaseModel):
     law_id: str
     content: str
@@ -16,6 +19,9 @@ class CurriculumSeedRequest(BaseModel):
     curriculum_id: int
     title: str
     content: str
+
+class CurriculumDeleteRequest(BaseModel):
+    lesson_id: int
 
 @router.get("/status")
 async def status():
@@ -101,3 +107,27 @@ async def generate_content(request: LawChangeRequest):
             "markdown_report": f"[PoC Fallback] RAG 엔진 예외 발생: {str(e)}\n내용: {request.content[:100]}...",
             "status": "Partial Success (Fallback)"
         }
+
+@router.post("/curriculum-delete")
+async def delete_curriculum(request: CurriculumDeleteRequest):
+    """테스트 후 생성했던 Mock 강의안 데이터를 pgvector DB에서 즉시 안전하게 소거하는 Teardown API"""
+    try:
+        from app.core.database import CONNECTION_STRING
+        from sqlalchemy import create_engine, text as sql_text
+        
+        custom_id = f"lesson_{request.lesson_id}"
+        engine = create_engine(CONNECTION_STRING)
+        with engine.connect() as conn:
+            conn.execute(
+                sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id = :custom_id"),
+                {"custom_id": custom_id}
+            )
+            conn.commit()
+            
+        return {
+            "status": "Success",
+            "message": f"Mock Curriculum Lesson '{request.lesson_id}' successfully cleaned up from vector store."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

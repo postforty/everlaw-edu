@@ -172,3 +172,110 @@ def retrieve_affected_curriculum(law_content: str) -> List[dict]:
             "content": doc.page_content
         })
     return affected_lessons
+
+def add_documents_to_vector_store_bulk(documents: List[Document]):
+    """다수의 법령 청크를 배치 단위로 고속 임베딩 및 물리적 적재 (소켓 고갈 및 Ollama 데드락 방지, 벌크 CDC 및 멱등성 보장)"""
+    if not documents:
+        print("🟢 적재할 문서가 존재하지 않습니다.")
+        return
+        
+    print(f"\n⚡ [벌크 적재 개시] 총 {len(documents)}개 청크의 대용량 RAG 적재 파이프라인 기동...")
+    vector_store = PGVector(
+        connection_string=CONNECTION_STRING,
+        embedding_function=embeddings,
+        collection_name=COLLECTION_NAME,
+    )
+    
+    # 1. 문서별 고유 비즈니스 키(custom_id) 및 해시 생성
+    doc_map = {}  # custom_id -> (Document, current_hash)
+    for doc in documents:
+        # 본문 해시 생성 및 메타데이터 주입
+        current_hash = hashlib.sha256(doc.page_content.encode('utf-8')).hexdigest()
+        doc.metadata["chunk_hash"] = current_hash
+        
+        law_name = doc.metadata.get("law_name")
+        article = doc.metadata.get("article")
+        
+        if law_name and article:
+            custom_id = f"law_{law_name}_{article}"
+        else:
+            law_key = doc.metadata.get("law_id") or doc.metadata.get("commit_sha")
+            custom_id = f"law_{law_key}" if law_key else None
+            
+        if not custom_id:
+            # Fallback UUID
+            import uuid
+            custom_id = f"law_auto_{uuid.uuid4().hex}"
+            
+        doc_map[custom_id] = (doc, current_hash)
+        
+    custom_ids = list(doc_map.keys())
+    
+    # 2. [벌크 CDC 해시 대조] 단 1번의 SELECT 쿼리로 이미 존재하는 청크들의 기존 해시 조회
+    existing_hashes = {}
+    try:
+        engine = create_engine(CONNECTION_STRING)
+        with engine.connect() as conn:
+            # 안전하게 파라미터화된 바인딩 사용
+            # SQLAlchemy IN 조건 처리
+            query = sql_text("SELECT custom_id, cmetadata FROM langchain_pg_embedding WHERE custom_id IN (SELECT unnest(:ids))")
+            result = conn.execute(query, {"ids": custom_ids}).fetchall()
+            for row in result:
+                cid, cmetadata = row[0], row[1]
+                if cmetadata:
+                    if isinstance(cmetadata, str):
+                        try:
+                            cmetadata = json.loads(cmetadata)
+                        except:
+                            cmetadata = {}
+                    existing_hashes[cid] = cmetadata.get("chunk_hash")
+    except Exception as he:
+        print(f"⚠️ [경고] 벌크 해시 CDC 조회 에러 (전체 강제 적재 진행): {he}")
+
+    # 3. 해시가 동일한 무변경 청크 필터링 (Bulk Skip)
+    final_docs = []
+    final_ids = []
+    skip_count = 0
+    
+    for cid, (doc, curr_hash) in doc_map.items():
+        old_hash = existing_hashes.get(cid)
+        if old_hash and old_hash == curr_hash:
+            skip_count += 1
+        else:
+            final_docs.append(doc)
+            final_ids.append(cid)
+            
+    print(f"🟢 [벌크 CDC] 전체 {len(documents)}개 중 무변경 스킵: {skip_count}개 | 신규/개정 적재 대상: {len(final_docs)}개")
+    
+    if not final_docs:
+        print("🟢 [완료] 적재할 변경 대상이 전혀 존재하지 않아 파이프라인을 종료합니다.")
+        return
+        
+    # 4. [벌크 멱등성 클렌징] 신규 적재 대상 청크들에 대해 단 1번의 벌크 DELETE 단행
+    try:
+        engine = create_engine(
+            CONNECTION_STRING,
+            json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
+        )
+        with engine.connect() as conn:
+            delete_query = sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id IN (SELECT unnest(:ids))")
+            conn.execute(delete_query, {"ids": final_ids})
+            conn.commit()
+        print(f"🧹 [성공] 기존 낡은 멱등성 청크 {len(final_ids)}개 벌크 SQL DELETE 소거 완료")
+    except Exception as de:
+        print(f"⚠️ [경고] 벌크 적재 전 클렌징 에러 (무시하고 적재 강행): {de}")
+        
+    # 5. [Ollama 최적화 슬라이싱 배치 적재] - 단일 배치 한계 및 메모리 과부하 예방 (50개 단위 슬라이싱)
+    batch_size = 50
+    try:
+        print(f"🚀 [Ollama & DB] 총 {len(final_docs)}개 청크를 {batch_size}개씩 쪼개어 슬라이싱 배치 임베딩 및 DB 적재 단행...")
+        for idx in range(0, len(final_docs), batch_size):
+            batch_docs = final_docs[idx:idx + batch_size]
+            batch_ids = final_ids[idx:idx + batch_size]
+            print(f"   ├ ⚡ [배치 적재 진행] {idx + len(batch_docs)}/{len(final_docs)}개 청크 임베딩 전송 중...")
+            vector_store.add_documents(batch_docs, ids=batch_ids)
+            
+        print(f"🎉 [대성공] {len(final_ids)}개 청크 벌크 적재 및 멱등 Upsert 완전 처리 완료!")
+    except Exception as db_err:
+        print(f"❌ [치명적 벌크 적재 실패]: {db_err}")
+        raise db_err

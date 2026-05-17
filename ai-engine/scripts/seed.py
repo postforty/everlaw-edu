@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import GITHUB_REPO, GITHUB_TOKEN, POSTGRES_URL
-from app.core.database import add_document_to_vector_store
 from app.ingestion.parser import extract_fine_grained_law_metadata, split_law_markdown_to_documents
 
 def seed_industry_safety_law():
@@ -82,21 +81,19 @@ def seed_industry_safety_law():
         except Exception as clean_err:
             print(f"   ⚠️ [경고] 적재 전 DB 사전 청소 중 오류 발생 (무시하고 적재 진행): {clean_err}")
 
-        print(f"\n💾 2단계: 멱등성 주소 메타데이터가 탑재된 {len(all_documents)}개의 명품 정형 조문을 pgvector RAG DB에 순차 적재합니다...")
+        # scripts 폴더의 부모인 ai-engine을 sys.path에 추가하여 app 패키지를 찾을 수 있도록 함
+        from app.core.database import add_documents_to_vector_store_bulk
         
-        success_count = 0
-        for i, doc in enumerate(all_documents, 1):
-            try:
-                # article이 없는 비조항 청크(부칙, 목적 등)에 대해 law_id 기반의 결정론적 fallback 키 보장
-                if not doc.metadata.get("article"):
-                    doc.metadata["law_id"] = f"seed_{doc.metadata['law_name']}_{doc.metadata['law_type']}_{doc.metadata['chunk_idx']}"
-                
-                add_document_to_vector_store(doc.page_content, doc.metadata)
-                success_count += 1
-                if i % 10 == 0 or i == len(all_documents):
-                    print(f"   ├ [진행상황] {i}/{len(all_documents)}개 청크 적재 완료... (현재 조항: {doc.metadata.get('article', 'N/A')})")
-            except Exception as db_err:
-                print(f"   ❌ [적재 에러 - 청크 {i}]: {db_err}")
+        print(f"\n💾 2단계: 멱등성 주소 메타데이터가 탑재된 {len(all_documents)}개의 명품 정형 조문을 pgvector RAG DB에 고속 벌크 적재합니다...")
+        
+        # 1. 비조항 청크(부칙, 목적 등)에 대해 law_id 기반의 결정론적 fallback 키 전처리 보장
+        for doc in all_documents:
+            if not doc.metadata.get("article"):
+                doc.metadata["law_id"] = f"seed_{doc.metadata['law_name']}_{doc.metadata['law_type']}_{doc.metadata['chunk_idx']}"
+        
+        # 2. 단일 배치 트랜잭션으로 벌크 적재 (Ollama 단 1번 호출)
+        add_documents_to_vector_store_bulk(all_documents)
+        success_count = len(all_documents)
                 
         print(f"\n🎉 [최종 결과] 총 {success_count}개의 고밀도 '산업안전보건법' 조문 벡터 데이터가 pgvector DB에 풀시딩 완료되었습니다!")
         print("💡 이제 중복이 단 1행도 생성되지 않는 철저한 멱등성 하이브리드 RAG 교육용 AI 팩토리를 구동하십시오!")

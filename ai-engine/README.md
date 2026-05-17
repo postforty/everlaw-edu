@@ -117,6 +117,14 @@ GITHUB_REPO="legalize-kr/legalize-kr"
 GITHUB_TOKEN="your_github_personal_access_token_optional"
 MOEL_RSS_URL="https://www.moel.go.kr/news/notice/noticeList.do"
 ```
+ 
+### 4.2.1 [선택] Redis 캐시 데이터 초기화 (스캐너 강제 재수집용)
+스캐너 개발 및 RAG 동기화 테스트 시, GitHub 실시간 감시 데몬이 이미 수집을 완료한 커밋일지라도 "신규 개정 감지"로 강제 리셋하여 Smart CDC(변동분 멱등 적재 및 무변경 스킵) 흐름을 재테스트하려면 로컬 Docker Redis 캐시를 다음 명령어로 즉시 초기화할 수 있습니다:
+
+```cmd
+# Docker 컨테이너 상의 Redis 캐시 전체 소거 (강제 재감지용)
+docker exec -it everlaw_redis redis-cli flushall
+```
 
 ### 4.3 초기 대한민국 3대 법령 데이터 벌크 시딩 (Seeding)
 처음 프로젝트 구동 시, 원격 깃허브 저장소로부터 최신 산업안전보건법 3대 조문(법률, 시행령, 시행규칙) 전문을 마크다운 계층형 공통 파서인 `split_law_markdown_to_documents`로 정교하게 분석 가공하여 벡터 데이터베이스에 시딩하는 스크립트를 기동합니다.

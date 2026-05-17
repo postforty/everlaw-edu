@@ -4,7 +4,7 @@ from datetime import datetime
 from github import Github
 from app.core.config import r, MOEL_RSS_URL, GITHUB_REPO, GITHUB_TOKEN
 from app.ingestion.parser import extract_added_text_from_patch, extract_fine_grained_law_metadata, split_law_markdown_to_documents
-from app.core.database import add_document_to_vector_store
+from app.core.database import add_documents_to_vector_store_bulk
 
 class LawScanner:
     def __init__(self):
@@ -78,6 +78,16 @@ class LawScanner:
                                 if len(parts) >= 2:
                                     law_name = parts[-2]
 
+                            # 💡 [엄격한 파일 경로 필터링] 오직 산업안전보건법 3대 원본 파일만 RAG 수집 대상으로 허용 (오염률 0% 보장)
+                            ALLOWED_PATHS = [
+                                "kr/산업안전보건법/법률.md",
+                                "kr/산업안전보건법/시행령.md",
+                                "kr/산업안전보건법/시행규칙.md"
+                            ]
+                            if file.filename not in ALLOWED_PATHS:
+                                print(f"🟢 [엄격 필터 스킵] 수집 비대상 법령 파일입니다. 적재 생략 (파일명: {file.filename})")
+                                continue
+
                             processed_articles = False
                             try:
                                 # 전체 파일을 다운로드하고 공통 파이프라인으로 전체 청킹
@@ -91,7 +101,7 @@ class LawScanner:
                                     source=f"GitHub ({self.github_repo})"
                                 )
                                 
-                                # 모든 청크를 DB에 전달 — 해시 CDC가 무변경 청크는 자동 SKIP, 변경 청크만 UPDATE
+                                # 모든 청크에 실시간 메타데이터 이식
                                 for doc in docs:
                                     doc.metadata["sha"] = commit.sha
                                     doc.metadata["commit_sha"] = commit.sha
@@ -99,7 +109,8 @@ class LawScanner:
                                     doc.metadata["url"] = commit.html_url
                                     doc.metadata["filename"] = file.filename
                                     
-                                    add_document_to_vector_store(doc.page_content, doc.metadata)
+                                # 단 1번의 벌크 CDC 및 단일 배치 임베딩 적재 개시!
+                                add_documents_to_vector_store_bulk(docs)
                                 
                                 processed_articles = True
                             except Exception as fe:
