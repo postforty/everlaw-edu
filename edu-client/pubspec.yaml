@@ -1,0 +1,39 @@
+name: edu_client
+description: "EverLaw Edu: 최신 법령 DB 기반 교육 콘텐츠 자율 생산 및 컴플라이언스 관리 클라이언트"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Cupertino Icons
+  cupertino_icons: ^1.0.6
+
+  # State Management (Riverpod 2.x)
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Network & Security
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+
+  # Markdown Renderer
+  flutter_markdown: ^0.6.18+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+
+  # Code Generation
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.3.9
+
+flutter:
+  uses-material-design: true

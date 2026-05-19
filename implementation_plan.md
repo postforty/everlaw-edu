@@ -29,7 +29,7 @@
 - **Workflow**: LangChain, LangGraph 기반의 자율 에이전트 감사 노드 구성
 
 ### 2.3 Back-end (신규 구축 예정)
-- **Framework**: Spring Boot 3.x, Java 21
+- **Framework**: Spring Boot 3.x, Java 25
 - **ORM / DB**: Spring Data JPA, Hibernate, PostgreSQL Driver
 - **Security**: Spring Security, JWT (인증/인가)
 
@@ -62,20 +62,20 @@
 자율 생산된 교육 자료들의 생명주기를 영구 관리하고 Flutter 클라이언트를 서빙할 백엔드를 개발합니다.
 
 *   **2.1 프로젝트 초기화 및 DB 설계**
-    *   [ ] Spring Boot 프로젝트 세팅 (JPA, Web, Security, PostgreSQL 드라이버 연동)
-    *   [ ] JPA Entity 설계: `Member`(사용자), `Curriculum`(교육 카테고리/과정), `Lesson`(AI 자율 생산 교안 마크다운 수록), `ApprovalRequest`(콘텐츠 생산 후 관리자 검토 대기열), `ContentSnapshot`(특정 릴리스 버전 보존 스냅샷)
+    *   [x] Spring Boot 프로젝트 세팅 (JPA, Web, Security, PostgreSQL 드라이버 연동)
+    *   [x] JPA Entity 설계: `Member`(사용자), `Curriculum`(교육 카테고리/과정), `Lesson`(AI 자율 생산 교안 마크다운 수록), `ApprovalRequest`(콘텐츠 생산 후 관리자 검토 대기열), `ContentSnapshot`(특정 릴리스 버전 보존 스냅샷)
 *   **2.2 AI Engine 콘텐츠 생산 연동 및 웹훅(Webhook) API**
-    *   [ ] 교육 담당자가 생산 트리거 시 FastAPI AI 엔진을 호출하여 교안을 동적 창작하고, 결과를 백엔드로 수신하여 `ApprovalRequest`로 전환하는 연동 로직 구현.
-    *   [ ] Redis Pub/Sub과 FCM 기반 실시간 알림 로직 구성.
+    *   [x] 교육 담당자가 생산 트리거 시 FastAPI AI 엔진을 호출하여 교안을 동적 창작하고, 결과를 백엔드로 수신하여 `ApprovalRequest`로 전환하는 연동 로직 구현.
+    *   [x] Redis Pub/Sub과 FCM 기반 실시간 알림 로직 구성.
 *   **2.3 프론트엔드 제공 API 개발**
-    *   [ ] JWT 기반 인증/인가 및 직무 카테고리 권한 관리.
-    *   [ ] 대기열 조회/승인/반려 처리 및 릴리스 배포 API 구현.
+    *   [x] JWT 기반 인증/인가 및 직무 카테고리 권한 관리.
+    *   [x] 대기열 조회/승인/반려 처리 및 릴리스 배포 API 구현.
 
 ### Phase 3: Flutter 프론트엔드 구축 (Week 5-6)
 하나의 코드베이스로 관리자 웹 대시보드와 학습자 모바일 앱을 구성합니다.
 
 *   **3.1 공통 및 코어 모듈 구성**
-    *   [ ] Flutter 프로젝트 구조 세팅 및 Riverpod 기반 상태 관리 모듈 구성.
+    *   [x] Flutter 프로젝트 구조 세팅 및 Riverpod 기반 상태 관리 모듈 구성.
     *   [ ] 마크다운 동적 파싱 렌더러 커스텀 위젯 개발.
 *   **3.2 법령-교안 대조 승인 뷰어 (Web Target)**
     *   [ ] **좌측(최신 법령 조문 팩트) vs 우측(AI가 생산해낸 마크다운 교안 및 퀴즈) Side-by-Side Reference & Content Viewer UI** 구현.
@@ -111,3 +111,34 @@
 2.  **Spring Boot -> AI Engine (Generate Trigger)**
     *   `POST /generate-content`
     *   Body: `{ "law_content": "...", "metadata": { "lesson_id": 123 } }`
+
+---
+
+## 6. AI Engine 백로그 및 기술 부채 개선 과제 (시니어 제안)
+
+향후 시스템 스케일 아웃 및 대규모 컴플라이언스 트래픽 처리를 위해 추후 개발 단계에서 보강해야 할 핵심 백로그입니다.
+
+### 6.1 SQLAlchemy Connection Pool 누수 차단 및 싱글톤화 (High)
+*   **이슈**: `database.py` 내의 `add_document_to_vector_store` 및 `add_documents_to_vector_store_bulk` 함수가 호출될 때마다 매번 `create_engine(CONNECTION_STRING)`을 새로 호출하고 있어 데이터베이스 **소켓 고갈(Socket Exhaustion)** 및 커넥션 풀 풀링 실패 위험이 있습니다.
+*   **작업 내용**:
+    *   [ ] `database.py` 모듈 레벨에서 `engine`을 1회만 초기화(싱글톤 패턴)하여 전체 애플리케이션이 공유하도록 변경.
+    *   [ ] 세션 사용 시 `scoped_session` 또는 context manager(`with`) 패턴을 엄격하게 적용하여 자원 자동 해제 보장.
+
+### 6.2 LangGraph 비동기(Async) 마이그레이션 (Medium)
+*   **이슈**: FastAPI 엔드포인트 `/generate-content`는 `async def` 기반으로 동작하나, 내부에서 호출하는 `graph_app.invoke()` 및 각 감사/RAG 노드가 동기식(Blocking) I/O로 작동하여 이벤트 루프를 장시간 점유할 위험이 있습니다.
+*   **작업 내용**:
+    *   [ ] `generator.py`, `validator.py` 의 RAG 및 감사 노드 함수들을 `async def`로 리팩토링.
+    *   [ ] `graph_workflow.py`에서 `graph_app.invoke(inputs)` 호출부를 비동기 `await graph_app.ainvoke(inputs)` 체계로 마이그레이션.
+
+### 6.3 Ollama 임베딩 배치 크기 환경 변수화 (Low)
+*   **이슈**: 벌크 적재 시 50개 크기로 배치를 잘라 전송하고 있어 로컬 Ollama 구동 환경의 하드웨어 리소스 상황에 따라 타임아웃이나 데드락 위험이 있습니다.
+*   **작업 내용**:
+    *   [ ] `.env` 및 `config.py`에 `EMBEDDING_BATCH_SIZE`를 설정 가능하도록 제어 상수 분리.
+    *   [ ] `database.py`에서 벌크 청크 임베딩 전송 시 하드웨어 부하 상태에 따라 유동적으로 배치 슬라이싱 크기를 제어하도록 교체.
+
+### 6.4 GitHub API Rate Limit 예외 처리 및 토큰 주입 정밀화 (Low)
+*   **이슈**: `scheduler.py`에서 GitHub API 호출 시 익명 클라이언트로 폴백할 경우, 시간당 60회의 매우 좁은 레이트 리밋에 걸려 백엔드 에러 크래시를 유발할 수 있습니다.
+*   **작업 내용**:
+    *   [ ] API 호출 부 전체에 `github.GithubException` 정밀 예외 처리를 장착하여 실패 시 크래시 없이 로깅 및 폴백(Fallback) 보장.
+    *   [ ] `.env` 파일에 토큰이 없거나 잘못된 포맷인 경우 경고 레벨 로그를 명확히 출력하도록 로깅 시스템 고도화.
+
