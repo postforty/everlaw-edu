@@ -76,13 +76,13 @@
 
 *   **3.1 공통 및 코어 모듈 구성**
     *   [x] Flutter 프로젝트 구조 세팅 및 Riverpod 기반 상태 관리 모듈 구성.
-    *   [ ] 마크다운 동적 파싱 렌더러 커스텀 위젯 개발.
+    *   [x] 마크다운 동적 파싱 렌더러 커스텀 위젯 개발.
 *   **3.2 법령-교안 대조 승인 뷰어 (Web Target)**
-    *   [ ] **좌측(최신 법령 조문 팩트) vs 우측(AI가 생산해낸 마크다운 교안 및 퀴즈) Side-by-Side Reference & Content Viewer UI** 구현.
-    *   [ ] AI 자가 검증 결과(Hallucination Score) 및 감사 소견 시각적 렌더링.
+    *   [x] **좌측(최신 법령 조문 팩트) vs 우측(AI가 생산해낸 마크다운 교안 및 퀴즈) Side-by-Side Reference & Content Viewer UI** 구현.
+    *   [x] AI 자가 검증 결과(Hallucination Score) 및 감사 소견 시각적 렌더링.
 *   **3.3 학습자용 앱 (Mobile Target)**
-    *   [ ] 최신 생산 릴리스 완료 교안 수강 및 실시간 모의 퀴즈 채점 피드백 UI.
-    *   [ ] FCM 연동 맞춤형 직무 푸시 알림 수신.
+    *   [x] 최신 생산 릴리스 완료 교안 수강 및 실시간 모의 퀴즈 채점 피드백 UI.
+    *   [x] FCM 연동 맞춤형 직무 푸시 알림 수신.
 
 ### Phase 4: 통합 테스트 및 배포 안정화 (Week 7-8)
 
