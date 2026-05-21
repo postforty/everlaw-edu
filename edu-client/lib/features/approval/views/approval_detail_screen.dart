@@ -19,9 +19,6 @@ class ApprovalDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
-  // 관리자 모의 서명 이메일
-  final String _adminEmail = 'compliance.officer@everlaw.com';
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -150,8 +147,10 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                   // 상단 탭/헤더 느낌의 연동
                   Container(
                     padding: const EdgeInsets.all(20),
-                    color: Colors.grey.shade50,
-                    border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                    ),
                     child: Row(
                       children: [
                         Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.secondary),
@@ -357,7 +356,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
     final success = await notifier.processAction(
       requestId: widget.request.id,
       approved: approved,
-      adminEmail: _adminEmail,
+      adminEmail: ref.read(adminEmailProvider),
     );
 
     if (mounted) {

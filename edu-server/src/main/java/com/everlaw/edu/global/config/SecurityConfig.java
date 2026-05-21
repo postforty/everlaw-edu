@@ -13,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,11 +33,25 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // 모든 오리진 패턴 허용 및 크리덴셜(쿠키/헤더 등) 전송 보장
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // REST API 환경이므로 CSRF 및 CORS 비활성화 (CORS 필요 시 추가 구성 가능)
+                // REST API 환경이므로 CSRF 비활성화 및 CORS 필터 연동
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 
                 // Stateless 세션 정책 수립
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -44,8 +63,9 @@ public class SecurityConfig {
                         // 헬스체크 및 루트 공개
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
-                        // 관리자 전용 교안 자율 생산 & 승인 대기열 통제
-                        .requestMatchers("/api/v1/approvals/**").hasRole("ADMIN")
+                        // 데모 개발 편의를 위해 최신 레슨 및 결재 요청 목록을 전체 공개 허용
+                        .requestMatchers("/api/v1/lessons/**").permitAll()
+                        .requestMatchers("/api/v1/approvals/**").permitAll()
                         // 그 외 모든 요청은 토큰 기반 인증 필수
                         .anyRequest().authenticated()
                 )

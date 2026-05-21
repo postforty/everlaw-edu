@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/lesson.dart';
 import '../providers/lesson_provider.dart';
 import 'lesson_detail_screen.dart';
 
@@ -177,7 +178,7 @@ class LessonListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLessonCard(BuildContext context, dynamic lesson, ThemeData theme) {
+  Widget _buildLessonCard(BuildContext context, Lesson lesson, ThemeData theme) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -201,7 +202,7 @@ class LessonListScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -250,16 +251,23 @@ class LessonListScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.gavel_rounded, size: 14, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
-                      Text(
-                        '근거 법률: ${lesson.associatedLawReference}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                      ),
-                    ],
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.gavel_rounded, size: 14, color: Colors.grey.shade500),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '근거 법률: ${lesson.associatedLawReference}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
                     children: [
                       Text(

@@ -46,8 +46,15 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
   /// 마크다운 텍스트에서 본문과 퀴즈 영역을 분리 및 분석하는 정밀 파서
   void _parseMarkdownAndQuiz() {
     final markdown = widget.rawMarkdown;
-    // 퀴즈 헤더 구분선 감지 ("### 📝 모의 평가 퀴즈" 또는 "### 📝 실시간 모의 평가 퀴즈")
-    final int quizIndex = markdown.indexOf("### 📝");
+    
+    // 다중 퀴즈 헤더 구분선 감지 지원 (### 📝, [QUIZ], ### [QUIZ])
+    int quizIndex = markdown.indexOf("### 📝");
+    if (quizIndex == -1) {
+      quizIndex = markdown.indexOf("[QUIZ]");
+    }
+    if (quizIndex == -1) {
+      quizIndex = markdown.indexOf("### [QUIZ]");
+    }
     
     if (quizIndex == -1) {
       setState(() {
@@ -68,12 +75,22 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
 
     for (var line in lines) {
       final trimmed = line.trim();
-      if (trimmed.startsWith("### 📝") || trimmed.startsWith("**문제:**") || trimmed.startsWith("Q.")) {
+      if (trimmed.isEmpty) continue;
+
+      if (trimmed.startsWith("### 📝") || 
+          trimmed.startsWith("[QUIZ]") || 
+          trimmed.startsWith("### [QUIZ]") ||
+          trimmed.startsWith("**문제:**") || 
+          trimmed.startsWith("Q.")) {
         question += "$trimmed\n";
       } else if (trimmed.startsWith("1.") || 
                  trimmed.startsWith("2.") || 
                  trimmed.startsWith("3.") || 
                  trimmed.startsWith("4.") ||
+                 trimmed.startsWith("1)") || 
+                 trimmed.startsWith("2)") || 
+                 trimmed.startsWith("3)") || 
+                 trimmed.startsWith("4)") ||
                  trimmed.startsWith("- (") ||
                  trimmed.startsWith("* (")) {
         options.add(trimmed);
@@ -160,7 +177,7 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _quizQuestion.replaceAll(RegExp(r'### 📝 |Q\.|\*\*문제:\*\*'), '').trim(),
+                      _quizQuestion.replaceAll(RegExp(r'### 📝 |Q\.|\*\*문제:\*\*|\[QUIZ\]\s*|### \[QUIZ\]\s*'), '').trim(),
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 17,
@@ -172,9 +189,6 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                     // 보기 선택 리스트
                     ..._quizOptions.map((option) {
                       final isSelected = _selectedOption == option;
-                      final isCorrectAnswer = widget.quizFeedback != null && 
-                          widget.quizFeedback!['correct'] == true && 
-                          isSelected;
                       
                       Color optionBorderColor = isSelected 
                           ? theme.colorScheme.primary 
@@ -202,24 +216,27 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                             ),
                             color: optionBgColor,
                           ),
-                          child: RadioListTile<String>(
-                            title: Text(
-                              option,
-                              style: TextStyle(
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                color: theme.colorScheme.onSurface,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: RadioListTile<String>(
+                              title: Text(
+                                option,
+                                style: TextStyle(
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  color: theme.colorScheme.onSurface,
+                                ),
                               ),
+                              value: option,
+                              groupValue: _selectedOption,
+                              activeColor: widget.quizFeedback != null
+                                  ? (widget.quizFeedback!['correct'] as bool ? Colors.green : Colors.red)
+                                  : theme.colorScheme.primary,
+                              onChanged: widget.quizFeedback != null ? null : (val) {
+                                setState(() {
+                                  _selectedOption = val;
+                                });
+                              },
                             ),
-                            value: option,
-                            groupValue: _selectedOption,
-                            activeColor: widget.quizFeedback != null
-                                ? (widget.quizFeedback!['correct'] as bool ? Colors.green : Colors.red)
-                                : theme.colorScheme.primary,
-                            onChanged: widget.quizFeedback != null ? null : (val) {
-                              setState(() {
-                                _selectedOption = val;
-                              });
-                            },
                           ),
                         ),
                       );
@@ -306,12 +323,14 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                 size: 24,
               ),
               const SizedBox(width: 8),
-              Text(
-                isCorrect ? '정답입니다! 🟢' : '오답입니다. 다시 한 번 학습해보세요! 🔴',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isCorrect ? Colors.green.shade900 : Colors.red.shade900,
+              Expanded(
+                child: Text(
+                  isCorrect ? '정답입니다! 🟢' : '오답입니다. 다시 한 번 학습해보세요! 🔴',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isCorrect ? Colors.green.shade900 : Colors.red.shade900,
+                  ),
                 ),
               ),
             ],

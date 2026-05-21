@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/approval_request.dart';
 import '../providers/approval_provider.dart';
 import 'approval_detail_screen.dart';
 
@@ -71,7 +72,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       '검토 대기 항목: 총 ${requests.length}건',
@@ -162,7 +163,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQueueCard(BuildContext context, dynamic request, ThemeData theme) {
+  Widget _buildQueueCard(BuildContext context, ApprovalRequest request, ThemeData theme) {
     final score = request.hallucinationScore as double;
     final isSafe = score <= 0.3;
     final scoreColor = isSafe 
@@ -194,7 +195,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -238,7 +239,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
                   height: 1.3,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 20),
               const Divider(),
               const SizedBox(height: 4),
               Row(

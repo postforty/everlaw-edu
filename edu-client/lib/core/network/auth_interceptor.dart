@@ -43,7 +43,7 @@ class AuthInterceptor extends Interceptor {
     }
     
     options.headers['Content-Type'] = 'application/json';
-    return super.onRequest(options, handler);
+    handler.next(options);
   }
 
   @override
