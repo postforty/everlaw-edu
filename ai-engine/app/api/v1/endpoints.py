@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from app.core.database import retrieve_affected_curriculum, add_curriculum_to_vector_store
-from app.services.graph_workflow import generate_rag_content
+from app.core.database import retrieve_affected_curriculum, retrieve_affected_curriculum_async, add_curriculum_to_vector_store, engine
+from app.services.graph_workflow import generate_rag_content, generate_rag_content_async
 
 router = APIRouter()
 
@@ -33,8 +33,8 @@ async def status():
 @router.post("/analyze-impact")
 async def analyze_impact(request: LawChangeRequest):
     try:
-        # 개정 법령 본문을 기준으로 pgvector에 등록된 연관 교육 커리큘럼(강의) 검색
-        affected_lessons = retrieve_affected_curriculum(request.content)
+        # 개정 법령 본문을 기준으로 pgvector에 등록된 연관 교육 커리큘럼(강의) 비동기 검색
+        affected_lessons = await retrieve_affected_curriculum_async(request.content)
         
         # 검색 결과 유무에 따른 영향 수준 결정
         impact_level = "High" if affected_lessons else "Low"
@@ -77,8 +77,8 @@ async def seed_curriculum(request: CurriculumSeedRequest):
 @router.post("/generate-content")
 async def generate_content(request: LawChangeRequest):
     try:
-        # RAG 엔진 호출 (차분 분석 & 구조화 JSON 및 마크다운 동시 생성)
-        result = generate_rag_content(request.content)
+        # RAG 엔진 비동기 호출 (차분 분석 & 구조화 JSON 및 마크다운 동시 생성)
+        result = await generate_rag_content_async(request.content)
         return {
             "law_id": request.law_id,
             "analysis_result": result["analysis_result"],
@@ -112,11 +112,9 @@ async def generate_content(request: LawChangeRequest):
 async def delete_curriculum(request: CurriculumDeleteRequest):
     """테스트 후 생성했던 Mock 강의안 데이터를 pgvector DB에서 즉시 안전하게 소거하는 Teardown API"""
     try:
-        from app.core.database import CONNECTION_STRING
-        from sqlalchemy import create_engine, text as sql_text
+        from sqlalchemy import text as sql_text
         
         custom_id = f"lesson_{request.lesson_id}"
-        engine = create_engine(CONNECTION_STRING)
         with engine.connect() as conn:
             conn.execute(
                 sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id = :custom_id"),

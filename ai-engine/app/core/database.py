@@ -4,7 +4,17 @@ from typing import List
 from sqlalchemy import create_engine, text as sql_text
 from langchain_community.vectorstores import PGVector
 from langchain_core.documents import Document
-from app.core.config import embeddings, CONNECTION_STRING, COLLECTION_NAME, COLLECTION_NAME_CURRICULUM
+from app.core.config import embeddings, CONNECTION_STRING, COLLECTION_NAME, COLLECTION_NAME_CURRICULUM, EMBEDDING_BATCH_SIZE
+
+# database.py의 모듈 수준 싱글톤 데이터베이스 엔진 생성
+# pool_size, max_overflow, pool_recycle 등 프로덕션 커넥션 풀 성능 튜닝 매개변수 적용
+engine = create_engine(
+    CONNECTION_STRING,
+    pool_size=20,
+    max_overflow=10,
+    pool_recycle=3600,
+    json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
+)
 
 def get_retriever():
     """최신 법령 전문(Ground Truth) 저장 테이블에서 검색을 수행하는 리트리버 획득"""
@@ -52,7 +62,6 @@ def add_document_to_vector_store(text: str, metadata: dict):
     if custom_id:
         # [해시 CDC 비교] 기존 레코드가 이미 존재하고 본문 해시가 같으면 완벽한 무변경이므로 프로세스 스킵
         try:
-            engine = create_engine(CONNECTION_STRING)
             with engine.connect() as conn:
                 result = conn.execute(
                     sql_text("SELECT cmetadata FROM langchain_pg_embedding WHERE custom_id = :custom_id"),
@@ -76,10 +85,6 @@ def add_document_to_vector_store(text: str, metadata: dict):
 
         # [물리적 중복 제거] LangChain PK 제약조건 한계를 무력화하기 위해 적재 전 기존 custom_id를 완전히 DELETE
         try:
-            engine = create_engine(
-                CONNECTION_STRING,
-                json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
-            )
             with engine.connect() as conn:
                 conn.execute(
                     sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id = :custom_id"),
@@ -117,7 +122,6 @@ def add_curriculum_to_vector_store(text: str, metadata: dict):
     if custom_id:
         # [해시 CDC 비교] 기존 레코드가 이미 존재하고 본문 해시가 같으면 완벽한 무변경이므로 프로세스 스킵
         try:
-            engine = create_engine(CONNECTION_STRING)
             with engine.connect() as conn:
                 result = conn.execute(
                     sql_text("SELECT cmetadata FROM langchain_pg_embedding WHERE custom_id = :custom_id"),
@@ -141,7 +145,6 @@ def add_curriculum_to_vector_store(text: str, metadata: dict):
 
         # [물리적 중복 제거] LangChain PK 제약조건 한계를 무력화하기 위해 적재 전 기존 custom_id를 완전히 DELETE
         try:
-            engine = create_engine(CONNECTION_STRING)
             with engine.connect() as conn:
                 conn.execute(
                     sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id = :custom_id"),
@@ -162,6 +165,22 @@ def retrieve_affected_curriculum(law_content: str) -> List[dict]:
     print("---RETRIEVING AFFECTED CURRICULUM (REFRACTORED)---")
     retriever = get_curriculum_retriever()
     documents = retriever.invoke(law_content)
+    
+    affected_lessons = []
+    for doc in documents:
+        affected_lessons.append({
+            "lesson_id": doc.metadata.get("lesson_id"),
+            "curriculum_id": doc.metadata.get("curriculum_id"),
+            "title": doc.metadata.get("title", "Unknown Lesson"),
+            "content": doc.page_content
+        })
+    return affected_lessons
+
+async def retrieve_affected_curriculum_async(law_content: str) -> List[dict]:
+    """개정 법령 텍스트를 기준으로 가장 유사도 높은(영향을 받을 가능성이 큰) 기존 커리큘럼 강의안들을 비동기 검색"""
+    print("---RETRIEVING AFFECTED CURRICULUM ASYNC---")
+    retriever = get_curriculum_retriever()
+    documents = await retriever.ainvoke(law_content)
     
     affected_lessons = []
     for doc in documents:
@@ -214,7 +233,6 @@ def add_documents_to_vector_store_bulk(documents: List[Document]):
     # 2. [벌크 CDC 해시 대조] 단 1번의 SELECT 쿼리로 이미 존재하는 청크들의 기존 해시 조회
     existing_hashes = {}
     try:
-        engine = create_engine(CONNECTION_STRING)
         with engine.connect() as conn:
             # 안전하게 파라미터화된 바인딩 사용
             # SQLAlchemy IN 조건 처리
@@ -253,10 +271,6 @@ def add_documents_to_vector_store_bulk(documents: List[Document]):
         
     # 4. [벌크 멱등성 클렌징] 신규 적재 대상 청크들에 대해 단 1번의 벌크 DELETE 단행
     try:
-        engine = create_engine(
-            CONNECTION_STRING,
-            json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
-        )
         with engine.connect() as conn:
             delete_query = sql_text("DELETE FROM langchain_pg_embedding WHERE custom_id IN (SELECT unnest(:ids))")
             conn.execute(delete_query, {"ids": final_ids})
@@ -265,8 +279,8 @@ def add_documents_to_vector_store_bulk(documents: List[Document]):
     except Exception as de:
         print(f"⚠️ [경고] 벌크 적재 전 클렌징 에러 (무시하고 적재 강행): {de}")
         
-    # 5. [Ollama 최적화 슬라이싱 배치 적재] - 단일 배치 한계 및 메모리 과부하 예방 (50개 단위 슬라이싱)
-    batch_size = 50
+    # 5. [Ollama 최적화 슬라이싱 배치 적재] - 단일 배치 한계 및 메모리 과부하 예방
+    batch_size = EMBEDDING_BATCH_SIZE
     try:
         print(f"🚀 [Ollama & DB] 총 {len(final_docs)}개 청크를 {batch_size}개씩 쪼개어 슬라이싱 배치 임베딩 및 DB 적재 단행...")
         for idx in range(0, len(final_docs), batch_size):

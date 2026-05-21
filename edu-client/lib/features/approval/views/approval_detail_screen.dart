@@ -185,9 +185,9 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                           // (프리뷰 화면이므로 실시간 풀이 제출은 디버깅 모의 콜백 연동)
                           MarkdownQuizRenderer(
                             rawMarkdown: widget.request.aiGeneratedMarkdown,
-                            onQuizSubmit: (selected) {
+                            onQuizSubmit: (selected, confidence) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('프리뷰 모드 제출 답안 감지: $selected')),
+                                SnackBar(content: Text('프리뷰 모드 제출 답안 감지: $selected ($confidence)')),
                               );
                             },
                           ),
@@ -268,7 +268,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                   const SizedBox(height: 12),
                   MarkdownQuizRenderer(
                     rawMarkdown: widget.request.aiGeneratedMarkdown,
-                    onQuizSubmit: (selected) {},
+                    onQuizSubmit: (selected, confidence) {},
                   ),
                 ],
               ),

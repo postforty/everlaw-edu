@@ -20,11 +20,21 @@ workflow.add_edge("validate", END)
 graph_app = workflow.compile()
 
 def generate_rag_content(question: str) -> dict:
-    """FastAPI 및 비동기 파이프라인에서 호출할 RAG 콘텐츠 자동 생성 및 검증 워크플로우 진입점"""
+    """FastAPI 및 비동기 파이프라인에서 호출할 RAG 콘텐츠 자동 생성 및 검증 워크플로우 진입점 (동기 버전)"""
     inputs = {"question": question}
     result = graph_app.invoke(inputs)
     
-    # 예전 API 호출부 및 메인 컨트롤러 호환성을 위해 generation_result를 analysis_result 키로 정합
+    return {
+        "analysis_result": result.get("generation_result"),
+        "validation_result": result.get("validation_result"),
+        "markdown_report": result.get("answer")
+    }
+
+async def generate_rag_content_async(question: str) -> dict:
+    """FastAPI 및 비동기 파이프라인에서 호출할 RAG 콘텐츠 자동 생성 및 검증 워크플로우 진입점 (비동기 버전)"""
+    inputs = {"question": question}
+    result = await graph_app.ainvoke(inputs)
+    
     return {
         "analysis_result": result.get("generation_result"),
         "validation_result": result.get("validation_result"),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/markdown_quiz_renderer.dart';
+import '../../chatbot/views/inline_chatbot_sheet.dart';
 import '../providers/lesson_provider.dart';
 
 class LessonDetailScreen extends ConsumerStatefulWidget {
@@ -48,6 +49,20 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
         foregroundColor: Colors.black,
         elevation: 0.5,
         actions: [
+          // 1. 실시간 법률 자문 AI 챗봇 호출 버튼
+          lessonAsync.when(
+            data: (lesson) => IconButton(
+              icon: Icon(Icons.support_agent_rounded, color: theme.colorScheme.primary, size: 26),
+              onPressed: () {
+                InlineChatbotSheet.show(context, lesson.associatedLawReference);
+              },
+              tooltip: 'AI 법률 자문 비서',
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+          ),
+          const SizedBox(width: 8),
+          
           if (feedback != null) 
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
@@ -119,15 +134,63 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
                 ),
               ),
               
+              if (lesson.isRecentlyRevised)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade300, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.shade100.withOpacity(0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: Colors.amber.shade900, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '⚖️ 실시간 개정 및 퀴즈 갱신 완료 (Revision ${lesson.revisionNumber})',
+                              style: TextStyle(
+                                color: Colors.amber.shade900,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '산업안전보건법이 최근 개정되어 본문 수치와 모의 평가 퀴즈가 자동으로 실시간 최신화되었습니다. 개정된 내용을 파악하고 새로운 퀴즈를 통하여 당신의 메타인지를 점검해 보세요!',
+                              style: TextStyle(
+                                color: Color(0xFF451A03),
+                                fontSize: 12,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 마크다운 & 퀴즈 스크롤 영역
               Expanded(
                 child: MarkdownQuizRenderer(
                   rawMarkdown: lesson.contentMarkdown,
                   isSubmitting: isSubmitting,
                   quizFeedback: feedback,
-                  onQuizSubmit: (selectedAnswer) {
-                    // 12.3 등 번호 형태만 백엔드에 제출하기 위해 포맷 가공 파싱 처리
-                    // 보기 예시: "1. 사업주의 전적인 형사 책임 부과" ➡️ "1"
+                  onQuizSubmit: (selectedAnswer, confidenceLevel) {
+                    // 번호 형태로 백엔드에 제출하기 위해 포맷 가공 파싱 처리
                     final int dotIndex = selectedAnswer.indexOf('.');
                     String answerPayload = selectedAnswer;
                     if (dotIndex != -1) {
@@ -137,6 +200,7 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
                     ref.read(quizSubmissionNotifierProvider.notifier).submitAnswer(
                       widget.lessonId,
                       answerPayload,
+                      confidenceLevel,
                     );
                   },
                 ),

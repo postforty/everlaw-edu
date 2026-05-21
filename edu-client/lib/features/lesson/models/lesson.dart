@@ -41,6 +41,8 @@ class Lesson {
   final String contentMarkdown;
   final String associatedLawReference;
   final DateTime createdAt;
+  final bool isRecentlyRevised;
+  final int revisionNumber;
 
   const Lesson({
     required this.id,
@@ -49,6 +51,8 @@ class Lesson {
     required this.contentMarkdown,
     required this.associatedLawReference,
     required this.createdAt,
+    this.isRecentlyRevised = false,
+    this.revisionNumber = 1,
   });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class Lesson {
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'] as String) 
           : DateTime.now(),
+      isRecentlyRevised: json['isRecentlyRevised'] as bool? ?? false,
+      revisionNumber: json['revisionNumber'] as int? ?? 1,
     );
   }
 
@@ -72,6 +78,8 @@ class Lesson {
       'contentMarkdown': contentMarkdown,
       'associatedLawReference': associatedLawReference,
       'createdAt': createdAt.toIso8601String(),
+      'isRecentlyRevised': isRecentlyRevised,
+      'revisionNumber': revisionNumber,
     };
   }
 }

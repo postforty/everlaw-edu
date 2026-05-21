@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_provider.dart';
 import '../models/approval_request.dart';
@@ -78,6 +77,10 @@ final approvalQueueProvider = FutureProvider.autoDispose<List<ApprovalRequest>>(
     
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data;
+      if (data.isEmpty) {
+        // 서버의 데이터베이스가 비어있을 경우, 사용자 테스트 편의를 위해 고품질 데모 결재 데이터를 리턴
+        return List.from(_mockApprovals);
+      }
       return data.map((json) => ApprovalRequest.fromJson(json)).toList();
     } else {
       throw Exception('대기열 목록 수신 실패: ${response.statusMessage}');
@@ -119,7 +122,7 @@ class ApprovalActionNotifier extends StateNotifier<AsyncValue<void>> {
       } else {
         throw Exception(response.data['message'] ?? '결정 처리 실패');
       }
-    } catch (e, stack) {
+    } catch (e) {
       // 오프라인/로컬 시뮬레이션: 1.2초 대기 후 로컬 Mock 리스트에서 성공적으로 항목 제거/상태 반영
       await Future.delayed(const Duration(milliseconds: 1200));
       

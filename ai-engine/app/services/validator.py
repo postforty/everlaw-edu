@@ -13,7 +13,7 @@ class ContentValidation(BaseModel):
     validation_details: str = Field(description="최신 법령 조문 팩트와 생성된 마크다운 강의안 간의 1대1 교차 사실 대조(Fact-checking) 결과에 대한 상세 감사 소견")
     warning_flag: bool = Field(description="법령의 핵심 수치(숫자, 기한)가 원본과 불일치하여 즉시 관리자 경고(Red Flag)를 띄워야 하는지 여부")
 
-def validate(state: AgentState):
+async def validate(state: AgentState):
     """생산된 콘텐츠 내의 모든 수치와 의도가 RAG 원본 팩트와 정확하게 일치하는지 교차 사실 대조 감사 수행"""
     print("---VALIDATING GENERATED CONTENT (REFACTORED)---")
     context = state.get("context", [])
@@ -51,13 +51,14 @@ def validate(state: AgentState):
     1. 생산된 마크다운 내용에 기술된 중요 규제 수치(예: 높이 2m, 과태료 벌금 수치 등)가 원본 법령의 수치와 단 1%의 오차도 없이 완벽하게 일치하는가? (숫자 불일치는 치명적 환각입니다)
     2. 생산된 콘텐츠가 원본 법령의 의무 의도를 왜곡하거나, 임의로 지어낸 허위 조항(환각)을 포함하고 있지는 않은가?
     3. 환각 의심 지수(Hallucination Score)를 0.0~1.0 사이로 계산하십시오 (환각이 없을수록 0.0에 수렴함).
+    4. 법령의 핵심 수치(숫자, 기한)가 원본과 불일치하여 즉시 관리자 경고(Red Flag)를 띄워야 하는지 여부
     """
     
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | structured_llm
     
     try:
-        val_res: ContentValidation = chain.invoke({
+        val_res: ContentValidation = await chain.ainvoke({
             "original_law": law_context_str,
             "title": gen_result.get("title", "N/A"),
             "law_reference": gen_result.get("law_reference", "N/A"),

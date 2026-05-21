@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_provider.dart';
 import '../models/lesson.dart';
@@ -9,91 +8,177 @@ final List<Lesson> _mockLessons = [
     id: 1,
     curriculum: const Curriculum(
       id: 101,
-      title: '중대재해처벌법과 현장 안전 관리',
-      description: '경영책임자의 법적 의무 사항 및 사고 예방 실천 가이드',
-      category: '산업안전',
-      targetJobCategory: '생산·안전 경영책임자',
+      title: '산업안전보건법 총칙 및 보건의무',
+      description: '산업안전보건법의 기본 목적과 정부·사업주 보건 의무',
+      category: '안전보건',
+      targetJobCategory: '전직원 및 관리자',
     ),
-    title: '[최신 개정] 2026 중대재해처벌법 핵심 대응 및 현장 보건 확보 의무',
+    title: '[마스터 챕터 1] 산업안전보건법 총칙 및 핵심 주체별 기본 안전 의무',
     contentMarkdown: '''
-# [최신 개정] 2026 중대재해처벌법 핵심 대응 가이드
+# 산업안전보건법 총칙 및 기본 보건 의무
 
-본 강좌는 경영책임자가 실질적으로 지배·운영·관리하는 사업장에서 임직원의 생명과 신체를 보호하기 위해 반드시 이행해야 할 법적 조치 사항을 다룹니다.
+본 강좌는 산업안전보건법의 근간을 이루는 목적과 각 주체(정부, 사업주, 근로자)의 기본 의무 사항을 학습합니다.
 
 ---
 
 ## ⚖️ 핵심 규정 분석
 
-### 1. 경영책임자의 안전보건확보 의무 (제4조)
-* **안전보건관리체계의 구축**: 재해예방에 필요한 인력 및 예산 편성 등 관리 체계를 갖추고 실제 이행해야 합니다.
-* **재발방지 대책의 수립**: 중대산업재해가 발생한 경우 즉시 재발방지 및 시정 조치를 시행해야 합니다.
-* **관계 법령에 따른 의무이행 관리**: 법정 교육 이행 및 위험성평가(Risk Assessment) 수립 여부를 상시 점검해야 합니다.
+### 1. 산업안전보건법의 목적 (제1조)
+* 산업안전 및 보건에 관한 기준을 확립하고, 그 책임의 한계를 명확하게 하여 **산업재해를 예방**합니다.
+* 쾌적한 작업환경을 조성함으로써 근로자의 **안전 및 보건을 유지·증진**하는 것을 목적으로 합니다.
 
-### 2. 위반 시의 형사 처벌 기준 (제6조)
-* **경영책임자 개인 처벌**: 제4조의 의무를 위반하여 근로자 사망사고(중대산업재해)에 이르게 한 사업주 또는 경영책임자는 **1년 이상의 징역** 또는 **10억원 이하의 벌금**에 처해집니다. (징역과 벌금의 병과 가능)
-* **법인 처벌**: 법인에게는 **50억원 이하의 벌금**이 부과됩니다.
+### 2. 사업주의 기본 의무 (제5조)
+* 근로자의 안전 및 건강 유지·증진을 위한 국가 정책에 따라야 합니다.
+* 유해·위험요인을 찾아내어 안전조치를 취하고, **쾌적한 작업환경**을 제공할 책임이 있습니다.
+* 안전보건 정보를 근로자에게 성실히 제공해야 합니다.
 
----
-
-## 💡 현장 핵심 실천 지침
-1. **위험성평가 정기 실시**: 연 2회 이상 유해·위험 요인을 점검하고 개선 대책을 수립하십시오.
-2. **비상대응 매뉴얼 구비**: 붕괴, 화재, 추락 등 중대 사고 상황 대비 비상 연락 체계 및 대피 훈련을 실시하십시오.
-3. **임직원 의견 수렴**: 반기 1회 이상 현장 종사자의 안전 보건 관련 건의 사항을 수집하고 적절한 예산을 투입해 조치하십시오.
+### 3. 근로자의 기본 의무 (제6조)
+* 근로자는 법이 정하는 **산업재해 예방을 위한 기준을 반드시 준수**해야 합니다.
+* 사업주 또는 관계인이 실시하는 산업재해 예방 조치에 성실히 협조해야 합니다. (예: 안전모 착용, 보호구 의무)
 
 ---
 
-### 📝 [QUIZ] 중대재해처벌법 제6조에 의거하여, 사업주가 안전 보건 확보 의무를 위반함으로써 근로자 사망 등 중대산업재해가 발생했을 때, 경영책임자 개인에게 부과될 수 있는 형사 처벌의 최소 징역 기준은 어떻게 될까요?
-1) 6개월 이상의 징역
-2) 1년 이상의 징역
-3) 3년 이상의 징역
-4) 5년 이상의 징역
+### 📝 [QUIZ] 산업안전보건법 제5조 및 제6조에 규정된 내용 중, '산업재해 예방을 위한 기준을 준수하고 사업주의 예방 조치에 협조해야 할 의무'를 지닌 주체는 누구일까요?
+1) 정부 부처 공무원
+2) 사업주 및 최고 경영자
+3) 근로자 본인
+4) 산업안전보건공단
 ''',
-    associatedLawReference: '중대재해처벌법 제4조 및 제6조',
+    associatedLawReference: '산업안전보건법 제1조 ~ 제6조',
     createdAt: DateTime.now().subtract(const Duration(days: 2)),
+    isRecentlyRevised: false,
+    revisionNumber: 1,
   ),
   Lesson(
     id: 2,
     curriculum: const Curriculum(
       id: 102,
-      title: '근로기준법 연장 근로 규제 가이드',
-      description: '주 52시간 근무제의 예외 및 유연근무 도입 실무',
-      category: '인사노무',
-      targetJobCategory: '인사팀 및 현업 부서장',
+      title: '위험성평가 실무',
+      description: '스스로 유해·위험요인을 찾아내어 개선하는 핵심 프로세스',
+      category: '안전보건',
+      targetJobCategory: '안전관리자 및 현장 감독관',
     ),
-    title: '2026 개정 근로기준법: 52시간제 연장 근로 위반 예방 및 유연근무 실무',
+    title: '[마스터 챕터 2] 현장 위험성평가(Risk Assessment) 구축 및 실무 가이드',
     contentMarkdown: '''
-# 2026 근로기준법: 연장 근로 및 유연근무 실무 지침
+# 현장 위험성평가(Risk Assessment) 구축 실무
 
-본 강좌는 법정근로시간 위반을 철저히 방지하고, 유연하고 합법적인 업무 프로세스를 구축하고자 하는 인사 담당자 및 조직 리더를 위한 실무 강좌입니다.
+위험성평가는 사업장의 위험 요인을 미리 찾아내어 그 위험의 크기를 평가하고, 적절한 감소 대책을 실행하는 예방 활동입니다.
 
 ---
 
 ## ⚖️ 핵심 규정 분석
 
-### 1. 연장 근로의 법적 제한 (제53조)
-* **당사자 합의 원칙**: 사용자와 근로자 간의 개별적인 합의가 있는 경우에 한하여 1주간에 **최대 12시간**을 한도로 근로시간을 연장할 수 있습니다.
-* **주 52시간제 원칙**: 법정근로시간(1주 40시간) + 합법적 연장근로(1주 12시간)의 한도를 초과할 수 없습니다.
+### 1. 위험성평가의 의무 실시 (제36조)
+* 사업주는 건설물, 기계, 설비, 원재료, 가스, 수증기, 분진 등에 따른 유해·위험 요인을 스스로 찾아내야 합니다.
+* 위험 요인별 부상 또는 질병 발생 가능성(빈도)과 중대성(강도)을 평가해야 합니다.
+* 위험 감소 대책을 마련하여 실천해야 하며, **근로자를 평가 과정에 참여**시켜야 합니다.
 
-### 2. 위반 시의 형사 처벌 (제110조)
-* 1주 12시간의 연장 근로 제한을 위반하여 근로를 지속시킨 자는 **2년 이하의 징역** 또는 **2천만원 이하의 벌금**에 처해집니다.
-* 합의 없는 연장 근로나 강요된 추가 근무 역시 강력한 노동법 위반 소송 사유가 됩니다.
-
----
-
-## 💡 유연근무제 합법 도입 방안
-1. **탄력적 근로시간제**: 특정 주의 근로시간을 늘리는 대신 다른 주의 근로시간을 단축하여 평균 1주 근로시간을 40시간 이내로 조정하십시오. (최대 3개월 또는 6개월 단위)
-2. **선택적 근로시간제**: 근로자 스스로 출퇴근 시간을 자유롭게 결정하도록 하되, 1개월(연구개발 업무의 경우 3개월) 정산 기간 내 평균 주 40시간 한도를 엄수하십시오.
+### 2. 위험성평가의 기록 및 보존
+* 위험성평가를 시행한 경우, 그 기록을 최소 **3년간 보존**해야 합니다.
+* 기록에는 유해·위험요인 파악 결과, 위험성 결정 내용, 조치한 대책 내용 등이 구체적으로 포함되어야 합니다.
 
 ---
 
-### 📝 [QUIZ] 근로기준법 제53조 제1항에 규정된 법정 요건에 따르면, 노사 당사자 간의 합의가 있는 경우 1주간에 연장할 수 있는 합법적인 근로시간의 최대 한도는 몇 시간일까요?
-1) 8시간
-2) 12시간
-3) 15시간
-4) 20시간
+## 💡 실무 위험성평가 프로세스
+1. **사전 준비**: 평가 대상을 선정하고, 유관 정보를 수집합니다.
+2. **유해·위험요인 파악**: 체크리스트법, 순회 점검 등을 통해 유해 위험요인을 현출합니다.
+3. **위험성 결정**: 빈도와 강도를 조합해 위험 수준이 허용 가능한지 결정합니다.
+4. **위험성 감소대책 수립 및 실행**: 공학적 대책, 관리적 대책, 보호구 지급 순으로 해소합니다.
+
+---
+
+### 📝 [QUIZ] 산업안전보건법 제36조에 따라, 사업장에서 유해·위험 요인별 위험성평가를 완료한 경우, 관련 평가 기록물을 법적으로 최소 몇 년 동안 보존해야 할까요?
+1) 1년
+2) 2년
+3) 3년
+4) 5년
 ''',
-    associatedLawReference: '근로기준법 제53조 및 제110조',
+    associatedLawReference: '산업안전보건법 제36조',
+    createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    isRecentlyRevised: false,
+    revisionNumber: 1,
+  ),
+  Lesson(
+    id: 3,
+    curriculum: const Curriculum(
+      id: 103,
+      title: '고소 작업 및 비계 조치',
+      description: '추락 사고 예방을 위한 높이별 비계 규격 및 발판 설치 지침',
+      category: '안전보건',
+      targetJobCategory: '현장 작업자 및 안전팀',
+    ),
+    title: '[마스터 챕터 3] 고소 작업 시 추락 방지 안전망 및 비계 설치 안전 기준',
+    contentMarkdown: '''
+# [⚖️ 2026 개정법 반영] 고소 작업 및 비계 설치 안전 기준
+
+본 강좌는 추락 위험이 높은 장소에서 작업 시 근로자의 생명을 보호하기 위한 필수 물리적 안전조치를 다룹니다.
+
+---
+
+## ⚖️ 핵심 규정 분석
+
+### 1. 비계 작업 시 추락 방지 조치 의무 (제38조)
+* 높이가 **2미터(2m) 이상**의 장소(작업발판 및 비계 등)에서 작업을 진행할 때, 추락 위험이 있는 경우 반드시 규격에 맞는 추락 방지 안전망을 촘촘히 의무적으로 설치하거나 안전대를 착용하게 해야 합니다.
+* **[🚨 2026 핵심 개정 사항]** 기존의 느슨한 기준이었던 3미터(3m) 이상에서, 2026년 법 개정을 통해 **2미터(2m) 이상**으로 규제가 대폭 강화되었습니다!
+
+### 2. 비계 및 작업발판 설치 기준
+* **작업발판 폭**: 작업발판의 폭은 최소 40cm 이상이어야 하며, 발판 틈새는 3cm 이하로 촘촘히 고정해야 합니다.
+* **안전난간 설치**: 바닥으로부터 90cm 이상 높이의 상부 난간대와 중간 난간대를 견고히 설치해야 합니다.
+
+---
+
+### 📝 [QUIZ] 2026년 최신 개정된 산업안전보건법에 의거하여, 현장 비계 작업 시 근로자의 추락 위험을 예방하기 위해 추락 방지망을 의무적으로 설치해야 하는 작업 장소의 최소 높이 기준은 무엇입니까?
+1) 1미터(1m) 이상
+2) 2미터(2m) 이상
+3) 3미터(3m) 이상
+4) 5미터(5m) 이상
+''',
+    associatedLawReference: '산업안전보건법 제38조',
+    createdAt: DateTime.now().subtract(const Duration(days: 4)),
+    isRecentlyRevised: true,
+    revisionNumber: 2,
+  ),
+  Lesson(
+    id: 4,
+    curriculum: const Curriculum(
+      id: 104,
+      title: '벌금 및 형사처벌',
+      description: '안전 조치 위반에 따른 법인 및 행위자 처벌 수위 총정리',
+      category: '안전보건',
+      targetJobCategory: '경영진 및 현장 대리인',
+    ),
+    title: '[마스터 챕터 4] 산업안전보건법 위반 시 벌칙, 벌금 및 형사처벌 기준',
+    contentMarkdown: '''
+# 산업안전보건법 위반 시 형사처벌 및 양벌규정
+
+산업안전보건법상의 안전 및 보건조치 의무를 게을리하여 근로자가 중대한 위해를 입은 경우, 엄격한 형사처벌과 금전적 징벌이 내려집니다.
+
+---
+
+## ⚖️ 핵심 규정 분석
+
+### 1. 안전조치 의무 위반으로 근로자 사망 시 (제167조)
+* 사업주 또는 경영책임자가 안전조치 의무를 위반하여 근로자를 사망에 이르게 한 경우, **7년 이하의 징역** 또는 **1억원 이하의 벌금**에 처해집니다.
+* 형 확정 후 5년 이내에 동일한 죄를 다시 범한 경우에는 그 형의 2분의 1까지 가중 처벌을 받습니다.
+
+### 2. 안전조치 의무 위반 시 (일반 재해 미발생 시) (제168조)
+* 실제 사망사고가 나지 않았더라도, 법정 안전조치 의무(예: 방호장치 미설치, 추락망 미설치 등)를 위반한 사실만으로도 **5년 이하의 징역** 또는 **5천만원 이하의 벌금**에 처해집니다.
+
+### 3. 법인 처벌 (양벌규정 - 제173조)
+* 행위자 처벌 외에 법인에게도 **10억원 이하(사망사고 시)** 또는 **5천만원 이하(일반 의무 위반 시)**의 벌금을 병과하여 경제적 책임을 강하게 묻습니다.
+
+---
+
+### 📝 [QUIZ] 산업안전보건법 제167조에 근거하여, 사업주가 필수 안전조치 의무를 위반함으로써 현장 근로자를 사망에 이르게 한 중대재해 발생 시, 사업주에게 부과되는 형사 처벌의 최고 기준은 어떻게 될까요?
+1) 1년 이하의 징역 또는 1천만원 이하의 벌금
+2) 3년 이하의 징역 또는 3천만원 이하의 벌금
+3) 5년 이하의 징역 또는 5천만원 이하의 벌금
+4) 7년 이하의 징역 또는 1억원 이하의 벌금
+''',
+    associatedLawReference: '산업안전보건법 제167조 ~ 제173조',
     createdAt: DateTime.now().subtract(const Duration(days: 5)),
+    isRecentlyRevised: false,
+    revisionNumber: 1,
   ),
 ];
 
@@ -105,6 +190,10 @@ final lessonsListProvider = FutureProvider.autoDispose<List<Lesson>>((ref) async
     final response = await dio.get('/api/v1/lessons');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data;
+      if (data.isEmpty) {
+        // 서버의 데이터베이스가 비어있을 경우, 사용자 테스트 편의를 위해 고품질 데모 데이터를 리턴
+        return _mockLessons;
+      }
       return data.map((json) => Lesson.fromJson(json)).toList();
     } else {
       throw Exception('교안 목록 패치 실패: ${response.statusMessage}');
@@ -143,7 +232,7 @@ class QuizSubmissionNotifier extends StateNotifier<AsyncValue<Map<String, dynami
   QuizSubmissionNotifier(this._ref) : super(const AsyncValue.data(null));
 
   /// 퀴즈 답안 제출 및 실시간 평가 API 호출 (실패 시 로컬 채점 Fallback 작동)
-  Future<void> submitAnswer(int lessonId, String selectedAnswer) async {
+  Future<void> submitAnswer(int lessonId, String selectedAnswer, String confidenceLevel) async {
     state = const AsyncValue.loading();
     final dio = _ref.read(dioProvider);
 
@@ -153,6 +242,7 @@ class QuizSubmissionNotifier extends StateNotifier<AsyncValue<Map<String, dynami
         data: {
           'lessonId': lessonId,
           'selectedAnswer': selectedAnswer,
+          'confidenceLevel': confidenceLevel,
         },
       );
 
@@ -162,7 +252,7 @@ class QuizSubmissionNotifier extends StateNotifier<AsyncValue<Map<String, dynami
       } else {
         throw Exception(response.statusMessage ?? '퀴즈 채점 에러');
       }
-    } catch (e, stack) {
+    } catch (e) {
       // 1초간 채점 중인 느낌의 딜레이를 제공한 뒤 오프라인 로컬 채점 수행
       await Future.delayed(const Duration(milliseconds: 1000));
       
@@ -171,26 +261,55 @@ class QuizSubmissionNotifier extends StateNotifier<AsyncValue<Map<String, dynami
       String correctAnswer = '';
 
       if (lessonId == 1) {
-        correctAnswer = '2'; // 1년 이상의 징역
+        correctAnswer = '3'; // 근로자 본인
         isCorrect = selectedAnswer.trim() == correctAnswer;
         feedback = isCorrect
-            ? '정답입니다! 중대재해처벌법 제6조 제1항에 의거하여, 안전보건확보 의무를 다하지 않아 중대산업재해로 근로자 사망이 유발되었을 때 경영책임자는 "1년 이상의 징역 또는 10억원 이하의 벌금"의 형사 처벌 대상이 됩니다. 법인은 50억원 이하 벌금입니다.'
-            : '아쉽게도 오답입니다. 정답은 2번(1년 이상의 징역)입니다. 중대재해처벌법 제6조 제1항은 사망 사고 시 처벌 하한선을 "1년 이상의 유기징역"으로 엄격하게 규정하고 있습니다.';
+            ? '정답입니다! 산업안전보건법 제5조 및 제6조에 따라 근로자는 산업재해 예방을 위한 기준을 준수하고 협조해야 할 의무가 있으며, 안전보건관리책임자의 임명 등 관리 체계 구축은 근로자가 아닌 사업주의 고유 의무입니다.'
+            : '아쉽게도 오답입니다. 정답은 3번(근로자 본인)이 협조의 주체이지만, 안전보건관리책임자 임명은 사업주의 의무이기 때문에 문항의 의무 주체에 해당하지 않습니다.';
       } else if (lessonId == 2) {
-        correctAnswer = '2'; // 12시간
+        correctAnswer = '3'; // 3년
         isCorrect = selectedAnswer.trim() == correctAnswer;
         feedback = isCorrect
-            ? '정답입니다! 근로기준법 제53조 제1항에 명시된 대로, 당사자 간의 합의가 있는 경우 1주간에 최대 12시간을 한도로 법정근로시간(40시간)을 늘릴 수 있어 주 총 52시간제가 완성됩니다.'
-            : '아쉽게도 오답입니다. 정답은 2번(12시간)입니다. 당사자 간 합의 시 1주간에 연장할 수 있는 최대 법적 연장근로 한도는 12시간입니다.';
+            ? '정답입니다! 산업안전보건법 제36조 제2항에 따라 위험성평가를 완료한 경우, 유해·위험요인 파악 및 감소대책 수립 등에 관한 기록물을 3년 동안 성실히 보존해야 합니다.'
+            : '아쉽게도 오답입니다. 정답은 3번(3년)입니다. 위험성평가 시행 기록의 법정 보존 의무 기간은 최소 3년입니다.';
+      } else if (lessonId == 3) {
+        correctAnswer = '2'; // 2m 이상
+        isCorrect = selectedAnswer.trim() == correctAnswer;
+        feedback = isCorrect
+            ? '정답입니다! 2026년 최신 개정법에 따라 고소 비계 작업 시 추락 방지 안전망을 의무 설치해야 하는 장소의 최소 높이 기준이 기존 3m에서 2m 이상으로 대폭 강화되었습니다.'
+            : '아쉽게도 오답입니다. 정답은 2번(2미터 이상)입니다. 2026년 법률 개정을 통해 안전망 의무 설치 기준 높이가 2m 이상으로 강화되었습니다.';
+      } else if (lessonId == 4) {
+        correctAnswer = '4'; // 7년 이하의 징역 또는 1억원 이하의 벌금
+        isCorrect = selectedAnswer.trim() == correctAnswer;
+        feedback = isCorrect
+            ? '정답입니다! 산업안전보건법 제167조에 따라, 사업주가 안전조치 의무를 위반하여 근로자를 사망하게 한 경우 7년 이하의 징역 또는 1억원 이하의 벌금에 처해집니다.'
+            : '아쉽게도 오답입니다. 정답은 4번(7년 이하의 징역 또는 1억원 이하의 벌금)입니다. 이는 매우 무거운 처벌 수위를 부과합니다.';
       } else {
         isCorrect = true;
         feedback = '데모 강좌 평가가 성공적으로 수행되었습니다.';
+      }
+
+      // 메타인지 교차 분석 진단 로직
+      String metaCognitionStatus = 'safe';
+      if (isCorrect) {
+        if (confidenceLevel == 'CONFIDENT') {
+          metaCognitionStatus = 'safe'; // 안전 지대 (알고 맞춤)
+        } else {
+          metaCognitionStatus = 'warning_guessed'; // 보완 구역 (찍어서 맞춤)
+        }
+      } else {
+        if (confidenceLevel == 'CONFIDENT') {
+          metaCognitionStatus = 'warning_illusion'; // 착각 위험 구역 (안다고 생각하고 틀림)
+        } else {
+          metaCognitionStatus = 'danger_unknown'; // 재학습 구역 (모르고 틀림)
+        }
       }
 
       state = AsyncValue.data({
         'isCorrect': isCorrect,
         'feedback': feedback,
         'correctAnswer': correctAnswer,
+        'metaCognitionStatus': metaCognitionStatus,
         'offlineMode': true,
       });
     }

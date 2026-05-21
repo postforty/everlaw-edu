@@ -1,7 +1,7 @@
 import hashlib
 import feedparser
 from datetime import datetime
-from github import Github
+from github import Github, GithubException
 from app.core.config import r, MOEL_RSS_URL, GITHUB_REPO, GITHUB_TOKEN
 from app.ingestion.parser import extract_added_text_from_patch, extract_fine_grained_law_metadata, split_law_markdown_to_documents
 from app.core.database import add_documents_to_vector_store_bulk
@@ -152,6 +152,13 @@ class LawScanner:
                 elif not r:
                     print("⚠️ Redis가 없어 GitHub 멱등성 체크를 우회합니다.")
             return new_changes
+        except GithubException as ge:
+            status_code = getattr(ge, 'status', 'N/A')
+            error_message = getattr(ge, 'data', {}).get('message', str(ge))
+            print(f"⚠️ [GitHub API 에러 발생] Status Code: {status_code} | Message: {error_message}")
+            if status_code == 403 and "rate limit" in error_message.lower():
+                print("🔴 [안내] GitHub API 호출 속도 제한(Rate Limit)에 도달했습니다. GITHUB_TOKEN을 설정하여 주입하거나 1시간 후 재시도하십시오.")
+            return []
         except Exception as e:
             print(f"Error scanning GitHub API: {e}")
             return []

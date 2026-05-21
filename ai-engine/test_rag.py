@@ -11,8 +11,8 @@ sys.path.append("c:\\Users\\dandycode\\Documents\\GitHub\\everlaw-edu\\ai-engine
 load_dotenv(dotenv_path="c:\\Users\\dandycode\\Documents\\GitHub\\everlaw-edu\\ai-engine\\.env")
 
 try:
-    from app.core.database import add_curriculum_to_vector_store, retrieve_affected_curriculum
-    from app.services.graph_workflow import generate_rag_content
+    from app.core.database import add_curriculum_to_vector_store, retrieve_affected_curriculum, retrieve_affected_curriculum_async
+    from app.services.graph_workflow import generate_rag_content, generate_rag_content_async
     from app.ingestion.scheduler import LawScanner
     from app.ingestion.parser import extract_added_text_from_patch
     print("✅ RAG Engine 및 Law Scanner 모듈 로드 완료!")
@@ -108,7 +108,7 @@ def run_retrieval_test():
             return
 
     print("\n==============================================")
-    print("🔍 2단계: 개정 법령 기반 연관 강의안 Retriever 검색 테스트")
+    print("🔍 2단계: 개정 법령 기반 연관 강의안 Retriever 검색 테스트 (동기)")
     print("==============================================")
     print(f"입력 개정 법령: {NEW_LAW_CHANGE.strip()}")
     print("----------------------------------------------")
@@ -127,7 +127,7 @@ def run_retrieval_test():
         return
 
     print("\n==============================================")
-    print("🤖 3단계: Gemini 연동 차분 분석 및 AI 검증(Validation) 테스트")
+    print("🤖 3단계: Gemini 연동 차분 분석 및 AI 검증(Validation) 테스트 (동기)")
     print("==============================================")
     try:
         print("💡 Gemini 에이전트 분석 기동 중 (LangGraph 파이프라인)...")
@@ -145,5 +145,53 @@ def run_retrieval_test():
     except Exception as e:
         print(f"❌ Gemini 분석 파이프라인 구동 실패: {e}")
 
+async def run_retrieval_test_async():
+    import asyncio
+    print("\n==============================================")
+    print("🔍 [비동기] 2단계: 개정 법령 기반 연관 강의안 Retriever 검색 테스트")
+    print("==============================================")
+    print(f"입력 개정 법령: {NEW_LAW_CHANGE.strip()}")
+    print("----------------------------------------------")
+    try:
+        results = await retrieve_affected_curriculum_async(NEW_LAW_CHANGE)
+        print(f"🎯 [비동기] 검색 완료! 총 {len(results)}개의 강의가 후보군으로 조회되었습니다.")
+        
+        for idx, res in enumerate(results, 1):
+            print(f"[{idx}순위 매칭 강의]")
+            print(f"   - Lesson ID: {res['lesson_id']}")
+            print(f"   - Title: {res['title']}")
+            print(f"   - Content (일부): {res['content'][:150]}...")
+            print("----------------------------------------------")
+    except Exception as e:
+        print(f"❌ [비동기] Retriever 실행 중 에러 발생: {e}")
+        return
+
+    print("\n==============================================")
+    print("🤖 [비동기] 3단계: Gemini 연동 차분 분석 및 AI 검증(Validation) 테스트")
+    print("==============================================")
+    try:
+        print("💡 [비동기] Gemini 에이전트 분석 기동 중 (LangGraph 파이프라인)...")
+        rag_output = await generate_rag_content_async(NEW_LAW_CHANGE)
+        
+        print("\n📊 [비동기] [1] 구조화 JSON 분석 데이터 (analysis_result):")
+        print(json.dumps(rag_output["analysis_result"], indent=2, ensure_ascii=False))
+        
+        print("\n🛡️ [비동기] [2] AI 자가 검증 결과 데이터 (validation_result):")
+        print(json.dumps(rag_output["validation_result"], indent=2, ensure_ascii=False))
+        
+        print("\n📝 [비동기] [3] 최종 관리자 보고서 (markdown_report):")
+        print(rag_output["markdown_report"])
+        
+    except Exception as e:
+        print(f"❌ [비동기] Gemini 분석 파이프라인 구동 실패: {e}")
+
 if __name__ == "__main__":
+    # 동기식 테스트 먼저 구동
     run_retrieval_test()
+    
+    # 비동기식 테스트 구동
+    import asyncio
+    print("\n==============================================")
+    print("⚡ 비동기 RAG 파이프라인 E2E 검증 시작")
+    print("==============================================")
+    asyncio.run(run_retrieval_test_async())

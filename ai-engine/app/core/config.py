@@ -44,3 +44,5 @@ llm = ChatGoogleGenerativeAI(
 CONNECTION_STRING = POSTGRES_URL
 COLLECTION_NAME = "law_documents"
 COLLECTION_NAME_CURRICULUM = "curriculum_documents"
+EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "50"))
+
