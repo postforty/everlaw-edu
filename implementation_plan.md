@@ -70,6 +70,13 @@
 *   **2.3 프론트엔드 제공 API 개발**
     *   [x] JWT 기반 인증/인가 및 직무 카테고리 권한 관리.
     *   [x] 대기열 조회/승인/반려 처리 및 릴리스 배포 API 구현.
+    *   [ ] **[U-7] 오답노트 개별 삭제 및 취약 지수 연동 API 개발**:
+        - `DELETE /api/incorrect-notes/{id}` 엔드포인트 구현 (오답 이력 DB Soft-Delete 처리).
+        - 삭제 사유가 학습 완수(Mastery)인 경우, 연관 테이블 `member_weakness_index`를 갱신하여 해당 조항의 취약 지수를 차감하는 안전 구역 보정 비즈니스 로직 구현.
+    *   [ ] **[U-8] 연속 정답 추적 및 지능형 자동 졸업 비즈니스 로직 개발**:
+        - 퀴즈 채점 제출 API (`POST /api/quizzes/submit`) 동작 시, 사용자의 해당 `law_reference` 대상 최근 퀴즈 제출 이력을 실시간 쿼리하여 **연속 3회 정답 여부 판정**.
+        - 조건 충족 시 해당 사용자의 해당 조항 연계 모든 구버전 오답 데이터를 `is_archived = true`로 일괄 자동 아카이빙 업데이트 처리.
+        - `member_weakness_index`의 `weakness_score`를 즉시 0점(완전 극복)으로 초기화 청산하는 트랜잭션 로직 구현.
 
 ### Phase 3: Flutter 프론트엔드 구축 (Week 5-6)
 하나의 코드베이스로 관리자 웹 대시보드와 학습자 모바일 앱을 구성합니다.
@@ -83,11 +90,33 @@
 *   **3.3 학습자용 앱 (Mobile Target)**
     *   [x] 최신 생산 릴리스 완료 교안 수강 및 실시간 모의 퀴즈 채점 피드백 UI.
     *   [x] FCM 연동 맞춤형 직무 푸시 알림 수신.
+    *   [ ] **[U-3] 4지선다형 스토리텔링 퀴즈 및 인터랙션 구현**:
+        - 사용자가 보기를 선택했을 때 즉각적인 색상 피드백(정/오답 구분) 제공.
+        - 정답일 경우, **0.8초~1초의 모션 딜레이**를 보장한 후 다음 퀴즈 카드로 갱신(State-Change) 렌더링.
+    *   [ ] **[U-4] 오답 복습용 해설 패널 및 컨텍스트 연동 인라인 AI 챗봇 개발**:
+        - 오답 발생 시, 문제 하단에 상세 해설 패널 슬라이딩 오픈 애니메이션 구현.
+        - 해설 패널 하단에 인라인 AI 도우미 채팅창 배치.
+        - 채팅창 대화 발송 시, 현재 틀린 문제의 컨텍스트(`question`, `options`, `selectedIndex`, `answerIndex`, `lawReference`)를 API 본문 페이로드에 자동 바인딩하여 백엔드로 전달하는 로직 구축.
+    *   [ ] **[U-5] 상단 오답노트 네비게이션 및 로컬 영속화 구현**:
+        - AppBar 영역 내 "오답노트" 진입 아이콘 버튼 배치.
+        - 로컬 디바이스 저장소에서 오답 데이터를 로드하여 목록 및 대화 히스토리를 노출하는 **오답노트 복습 전용 라우팅 및 뷰(View) 개발**.
+    *   [ ] **[U-7] 오답노트 개별 문제 삭제 및 아카이빙 (Learner Deletion) 구현**:
+        - 오답노트 개별 퀴즈 카드 우상단에 "삭제/완료" 버튼 탑재 및 클릭 시 화면 페이드아웃 애니메이션 적용.
+        - 로컬 저장소 즉시 삭제(Delete) 트랜잭션 수행 및 서버 삭제 동기화 API 연동 처리.
+    *   [ ] **[U-8] 지능형 자동 졸업 축하 위젯(Mastery Card) 및 연출 UI 개발**:
+        - 3회 연속 정답 달성 시 화면 최상단에 **"개념 완벽 정복(Mastery) 및 자동 졸업"** 안내 팝업 및 축하 애니메이션(Lottie) 탑재.
+        - 오답 리스트 동적 리프레시(아카이빙에 따른 리스트 아웃) 연동 구현.
+    *   [ ] **[U-6] 지능형 개인 맞춤형 변형 퀴즈 클리닉(Adaptive AI Quiz Clinic) 개발**:
+        - 학습용 뷰 내에 "취약점 극복 훈련" 진입 컴포넌트 및 개인별 취약 조항 점수 상태 바(ProgressBar) 탑재.
+        - API 호출을 통해 온더플라이로 수신된 실시간 변형 퀴즈 팩 렌더링 카드 및 오답노트 리라우팅 연동 뷰 구현.
 
 ### Phase 4: 통합 테스트 및 배포 안정화 (Week 7-8)
 
 *   **4.1 E2E 통합 테스트**
     *   [ ] 법령 업데이트 감지 ➡️ 최신 법령 DB Upsert ➡️ 관리자 대시보드에서 생성 클릭 ➡️ AI 자율 생산 및 자가 검증 ➡️ 관리자가 대조 화면에서 최종 승인 ➡️ 스냅샷 영구 저장 및 학습자 앱 배포/알림 E2E 종합 검증.
+    *   [ ] 퀴즈 오답 발생 ➡️ 로컬 저장소 즉각 영속화 ➡️ AI 도우미 연동 ➡️ 오답노트 화면 내 데이터 정합성 유지 검증.
+    *   [ ] 오답노트 문제 삭제 ➡️ 로컬 즉시 삭제 및 서버 DELETE API 비동기 동기화 ➡️ 서버 DB 취약 지수(`member_weakness_index`) 차감 보정 반영 E2E 검증.
+    *   [ ] **특정 법령 조항 변형 문제 연속 3회 정답 ➡️ 서버의 아카이빙 로직 발동 (`is_archived = true`) ➡️ 로컬 동기화 및 뷰 자동 아웃 ➡️ 취약 지수 0점 리셋 연계 E2E 검증.**
 *   **4.2 최적화 및 안정성 확보**
     *   [ ] Docker Compose 환경 서비스 헬스체크 고도화.
 
@@ -100,6 +129,26 @@
 *   **`lesson`**: id, curriculum_id, title, content_markdown (최신 생산본), associated_law_reference (RAG의 근거가 된 최신 법정 조항 고유 식별자 키)
 *   **`content_snapshot`**: id, lesson_id, curriculum_title, lesson_title, content_markdown, approved_by, approved_at (법적 감사 보존용 영구 데이터)
 *   **`approval_request`**: id, lesson_id, law_reference, ai_generated_markdown, validation_details, hallucination_score, status(PENDING/APPROVED/REJECTED), created_at
+*   **`quiz_bank`**: id (UUID, PK), lesson_id (FK), law_reference (지정 법령 조항 명칭), question (스토리텔링 지문 본문), options (JSON 배열형 4지선다 보기 항목), answer_index (정답 인덱스 0~3), hint, explanation (원본 법 조문 및 법리 근거 해설), created_at, updated_at (벌크 생성 및 핫스왑의 타겟 통합 퀴즈 DB)
+*   **`member_weakness_index`**: id (PK), member_id (FK), law_reference (대상 법령 조항), incorrect_count (누적 오답 횟수), weakness_score (취약 지수 점수, 퀴즈 극복 통과 시 차감 갱신), last_updated_at
+*   **`member_incorrect_note` (Server DB)**: id (PK), client_uuid (로컬 동기화용 고유 식별자), member_id (FK), quiz_id (FK), law_reference, selected_index, is_archived (자동 졸업 여부), is_deleted (Soft-delete 처리 플래그), incorrect_at, created_at, updated_at (클라이언트의 오답 내역을 동기화하여 저장하는 서버 측 통합 오답 레코드)
+*   **`client_incorrect_note (Client Local Storage)`**: 틀린 문제 및 대화 기록을 보존하기 위해 기기 로컬 디바이스에 직렬화하여 저장할 핵심 스키마 규격입니다. (Hive/SQLite 등 지원)
+    ```json
+    {
+      "id": "String (UUID, 로컬 기록 고유 식별자)",
+      "quizId": "String (UUID, 서버 측 원본 퀴즈 식별자)",
+      "question": "String (스토리텔링 질문 본문)",
+      "options": "List<String> (4지선다 보기 항목 배열)",
+      "answerIndex": "Int (0~3 사이의 정답 인덱스)",
+      "selectedIndex": "Int (학습자가 선택한 오답 인덱스)",
+      "hint": "String (생성된 힌트 문구)",
+      "explanation": "String (상세 법적 근거 해설)",
+      "lawReference": "String (근거 법령 이름 및 관련 조항 정보)",
+      "incorrectAt": "String (ISO-8601 타임스탬프, 틀린 시점)",
+      "isSynced": "Boolean (서버 동기화 완료 여부 플래그, 로컬 아웃박스 패턴 제어용)",
+      "isArchived": "Boolean (개념 졸업에 따른 자동 아카이빙/숨김 처리 여부)"
+    }
+    ```
 
 ---
 
@@ -111,6 +160,61 @@
 2.  **Spring Boot -> AI Engine (Generate Trigger)**
     *   `POST /generate-content`
     *   Body: `{ "law_content": "...", "metadata": { "lesson_id": 123 } }`
+3.  **Client -> Back-end -> AI Engine (Context AI Chat API)**
+    *   `POST /api/chat/ask`
+    *   Body:
+        ```json
+        {
+          "question": "사용자 질문 본문",
+          "context": {
+            "quizId": "퀴즈 식별자",
+            "question": "스토리텔링 질문",
+            "options": ["보기1", "보기2", "보기3", "보기4"],
+            "selectedIndex": 2,
+            "answerIndex": 3,
+            "lawReference": "산업안전보건법 제38조"
+          }
+        }
+        ```
+4.  **Client -> Back-end -> AI Engine (Adaptive Quiz Clinic API)**
+    *   `POST /api/chat/adaptive-quiz`
+    *   **Description**: 사용자의 가장 취약한 법령 조항을 기준으로 중복되지 않는 현장 시나리오의 변형 4지선다 퀴즈를 실시간(On-the-fly) 생성 요청합니다.
+    *   **Body**:
+        ```json
+        {
+          "memberId": "사용자 ID",
+          "weakLawReference": "산업안전보건법 제38조",
+          "excludeQuizIds": ["quiz-uuid-1", "quiz-uuid-2"]
+        }
+        ```
+    *   **Response**:
+        ```json
+        {
+          "quizId": "임시 발급된 UUID",
+          "lawReference": "산업안전보건법 제38조",
+          "question": "새롭게 생성된 실무 스토리텔링 지문",
+          "options": ["변형 보기1", "변형 보기2", "변형 보기3", "변형 보기4"],
+          "answerIndex": 1,
+          "hint": "새로운 시나리오 기반 힌트",
+          "explanation": "해당 조항과 시나리오에 대조되는 정교한 법리 해설"
+        }
+        ```
+5.  **Client -> Back-end (Incorrect Note Deletion & Archiving API)**
+    *   `DELETE /api/incorrect-notes/{id}`
+    *   **Description**: 사용자가 오답노트에서 특정 오답을 영구히 학습 완료(Mastery)하였거나 정리하고 싶을 때 호출하는 개별 삭제 API입니다.
+    *   **Headers**: `Authorization: Bearer <JWT Token>`
+    *   **Params**: `id` (오답 기록의 로컬 UUID 또는 서버 DB 매핑 PK)
+    *   **Action**: 해당 오답 레코드를 서버 DB에서 제거(또는 Soft-Delete)하고, 관련된 법령 조항의 `member_weakness_index` 취약 지수를 차감 보정 갱신합니다.
+    *   **Response**: `200 OK` (성공 시)
+6.  **Client -> Back-end (Quiz Submit & Mastery Check API)**
+    *   `POST /api/quizzes/submit`
+    *   **Description**: 퀴즈 채점 결과를 제출하고, 특정 조항에 대해 연속 3회 정답 달성 시 `member_incorrect_note` 내 기존 오답 기록을 `is_archived = true`로 일괄 업데이트하여 자동 졸업을 처리합니다.
+7.  **Client -> Back-end (Incorrect Note Sync API - Push)**
+    *   `POST /api/sync/incorrect-notes`
+    *   **Description**: 오프라인 상태에서 발생한 로컬 오답 노트 데이터(새로운 오답, 상태 변경된 오답)를 서버로 동기화합니다. UUID 충돌 시 덮어쓰기(On Conflict Update)를 수행합니다.
+8.  **Client <- Back-end (Pull Archived Status API)**
+    *   `GET /api/sync/incorrect-notes/archived-status`
+    *   **Description**: 앱 진입 시 서버에서 지능형 자동 졸업(`is_archived=true`) 처리된 오답 UUID 목록을 조회하여 로컬 디바이스 상태를 갱신(Pull)합니다.
 
 ---
 
@@ -141,4 +245,18 @@
 *   **작업 내용**:
     *   [ ] API 호출 부 전체에 `github.GithubException` 정밀 예외 처리를 장착하여 실패 시 크래시 없이 로깅 및 폴백(Fallback) 보장.
     *   [ ] `.env` 파일에 토큰이 없거나 잘못된 포맷인 경우 경고 레벨 로그를 명확히 출력하도록 로깅 시스템 고도화.
+
+### 6.5 클라이언트 로컬 오답 디바이스 저장소 영속성 보장 및 ACID 백업 (High)
+*   **이슈**: 퀴즈 오답 발생 시, 네트워크 통신 지연이나 비정상 앱 종료로 인해 틀린 문제의 학습 기록 및 대화가 유실될 위험이 존재하며, 서버 동기화 시 데이터 중복 누적이나 동시성 연산 충돌이 발생할 수 있습니다.
+*   **작업 내용**:
+    *   [ ] `edu-client` 내 로컬 DB(Hive/SQLite)의 쓰기 락 및 비동기 쓰기 트랜잭션의 ACID 특성을 엄격하게 제어하는 에러 복구용 예외 처리 래퍼 작성.
+    *   [ ] 로컬 DB 스키마에 `isSynced` 플래그 필드를 탑재하여 **로컬 아웃박스 패턴(Local Outbox Pattern)**을 적용하고, 백그라운드 네트워크 상태 감지(Connectivity 감지)에 따른 배치 일괄 동기화(Batch Sync) 로직 구현.
+    *   [ ] 서버 API 수신부에 로컬 UUID 기반의 **멱등성 Upsert (Insert on Conflict Update)** 처리(로컬의 변경 상태를 안전하게 반영) 및 취약 지수의 **서버 레벨 원자적 업데이트(Atomic Update: `score = score + 1`)** 통제 장치를 연동하여 데이터 중복 및 병합 유실을 원천 예방.
+
+### 6.6 지능형 변형 문제 중복 방지 및 Redis 캐싱 고도화 (Medium)
+*   **이슈**: 실시간 변형 퀴즈 `[U-6]` 호출 시, LLM 추론 지연 및 학습자당 수십 개의 이전 퀴즈 기록 대조로 인한 성능 오버헤드가 발생할 수 있습니다.
+*   **작업 내용**:
+    *   [ ] 사용자의 최근 퀴즈 수강 ID 리스트를 Redis Set 자료구조(`learner_quiz_set:{memberId}`)에 적재하고, 실시간 필터 쿼리를 메모리 레벨에서 초고속 처리하도록 설계.
+    *   [ ] 동일 조항에 대한 변형 생성 템플릿의 다양성을 보장하기 위해 가상 도메인 카테고리(제조업, 건설업, 화학공장 등)를 유동적으로 믹싱하는 프롬프트 변동 파라미터(Randomized System Directive) 체계 구현.
+
 
