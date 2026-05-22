@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/markdown_quiz_renderer.dart';
 import '../../chatbot/views/inline_chatbot_sheet.dart';
 import '../providers/lesson_provider.dart';
+import '../../incorrect_note/providers/incorrect_note_provider.dart';
+import '../../incorrect_note/models/incorrect_note.dart';
+import '../../../core/widgets/mastery_celebration_dialog.dart';
+import 'package:uuid/uuid.dart';
 
 class LessonDetailScreen extends ConsumerStatefulWidget {
   final int lessonId;
@@ -38,6 +42,51 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
       error: (_, __) => null,
       loading: () => null,
     );
+
+    ref.listen(quizSubmissionNotifierProvider, (previous, next) {
+      if (next is AsyncData && next.value != null && previous?.value == null) {
+        final data = next.value!;
+        final isCorrect = data['isCorrect'] as bool? ?? false;
+        final lesson = lessonAsync.valueOrNull;
+        if (lesson == null) return;
+
+        if (isCorrect) {
+          // [U-3] 0.8s motion delay and mastery check
+          Future.delayed(const Duration(milliseconds: 800), () async {
+            if (!mounted) return;
+            final achievedMastery = await ref.read(incorrectNoteProvider.notifier)
+                .registerQuizResult(lesson.associatedLawReference, true);
+            
+            if (achievedMastery && mounted) {
+              // [U-8] 지능형 자동 졸업 축하 위젯 호출
+              MasteryCelebrationDialog.show(context, lesson.associatedLawReference);
+            } else if (mounted) {
+              // 일반 정답 처리 (다음 상태 갱신 - 여기서는 이전 화면 복귀 혹은 완료 토스트)
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('정답입니다! 퀴즈가 완료되었습니다.'), backgroundColor: Colors.green),
+              );
+            }
+          });
+        } else {
+          // 오답 시 IncorrectNote 저장 연동
+          ref.read(incorrectNoteProvider.notifier).registerQuizResult(lesson.associatedLawReference, false);
+          
+          // 임시 추출 (실제로는 정규식 등으로 question, options 추출)
+          final note = IncorrectNote(
+            id: const Uuid().v4(),
+            quizId: lesson.id.toString(),
+            question: '틀린 문제 자동 추출 (임시)',
+            options: const ['A', 'B', 'C', 'D'],
+            answerIndex: 0,
+            selectedIndex: -1, // 추후 MarkdownQuizRenderer 상태 연동 필요 시 보강
+            explanation: data['feedback'] ?? '',
+            lawReference: lesson.associatedLawReference,
+            incorrectAt: DateTime.now().toIso8601String(),
+          );
+          ref.read(incorrectNoteProvider.notifier).addNote(note);
+        }
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -189,6 +238,12 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
                   rawMarkdown: lesson.contentMarkdown,
                   isSubmitting: isSubmitting,
                   quizFeedback: feedback,
+                  onChatbotRequested: feedback != null && !(feedback['isCorrect'] as bool? ?? false)
+                      ? () {
+                          final contextMsg = "[오답 질문 문맥]\n- 법적 근거: ${lesson.associatedLawReference}\n- 상세 해설: ${feedback['feedback']}\n\n위 내용과 관련하여 추가적인 설명을 부탁드립니다.";
+                          InlineChatbotSheet.show(context, lesson.associatedLawReference, initialContext: contextMsg);
+                        }
+                      : null,
                   onQuizSubmit: (selectedAnswer, confidenceLevel) {
                     // 번호 형태로 백엔드에 제출하기 위해 포맷 가공 파싱 처리
                     final int dotIndex = selectedAnswer.indexOf('.');

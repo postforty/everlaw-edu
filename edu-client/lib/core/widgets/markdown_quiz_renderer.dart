@@ -6,6 +6,7 @@ class MarkdownQuizRenderer extends StatefulWidget {
   final Function(String selectedAnswer, String confidenceLevel) onQuizSubmit;
   final bool isSubmitting;
   final Map<String, dynamic>? quizFeedback; // { "correct": bool, "explanation": String, "metaCognitionStatus": String }
+  final VoidCallback? onChatbotRequested;
 
   const MarkdownQuizRenderer({
     super.key,
@@ -13,6 +14,7 @@ class MarkdownQuizRenderer extends StatefulWidget {
     required this.onQuizSubmit,
     this.isSubmitting = false,
     this.quizFeedback,
+    this.onChatbotRequested,
   });
 
   @override
@@ -463,6 +465,23 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
               height: 1.55,
             ),
           ),
+          if (!isCorrect && widget.onChatbotRequested != null) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: widget.onChatbotRequested,
+                icon: const Icon(Icons.smart_toy_rounded, size: 18),
+                label: const Text('AI 도우미에게 이 문제 질문하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: cardColor,
+                  side: BorderSide(color: cardColor.withOpacity(0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

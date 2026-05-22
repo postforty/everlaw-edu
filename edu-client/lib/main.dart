@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/lesson/views/lesson_list_screen.dart';
+import 'features/main/views/main_tab_screen.dart';
 import 'features/approval/views/approval_queue_screen.dart';
 import 'core/network/auth_provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'features/incorrect_note/providers/incorrect_note_provider.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final prefs = await SharedPreferences.getInstance();
+  
   runApp(
     // Riverpod 상태 관리를 작동시키기 위한 글로벌 스코프 래핑
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const MyApp(),
     ),
   );
 }
@@ -224,7 +233,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> with SingleTicker
                               gradientColors: [const Color(0xFF3B82F6), const Color(0xFF1D4ED8)],
                               onTap: () => _handleRoleSelection(
                                 DemoRole.learner,
-                                const LessonListScreen(),
+                                const MainTabScreen(),
                               ),
                             ),
                             const SizedBox(height: 16),

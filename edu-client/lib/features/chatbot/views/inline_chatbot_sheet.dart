@@ -6,20 +6,25 @@ import '../providers/chatbot_provider.dart';
 
 class InlineChatbotSheet extends ConsumerStatefulWidget {
   final String? lawReference;
+  final String? initialContext;
 
   const InlineChatbotSheet({
     super.key,
     this.lawReference,
+    this.initialContext,
   });
 
   /// 바텀 시트를 우아하게 호출하는 공통 유틸리티 메소드
-  static void show(BuildContext context, String? lawReference) {
+  static void show(BuildContext context, String? lawReference, {String? initialContext}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.4),
-      builder: (context) => InlineChatbotSheet(lawReference: lawReference),
+      builder: (context) => InlineChatbotSheet(
+        lawReference: lawReference,
+        initialContext: initialContext,
+      ),
     );
   }
 
@@ -30,6 +35,16 @@ class InlineChatbotSheet extends ConsumerStatefulWidget {
 class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialContext != null && widget.initialContext!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleSend(widget.initialContext!);
+      });
+    }
+  }
 
   @override
   void dispose() {

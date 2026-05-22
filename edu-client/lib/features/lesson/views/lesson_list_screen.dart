@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/lesson.dart';
 import '../providers/lesson_provider.dart';
 import 'lesson_detail_screen.dart';
+import '../../incorrect_note/views/incorrect_note_screen.dart';
 
 class LessonListScreen extends ConsumerWidget {
   const LessonListScreen({super.key});
@@ -29,11 +30,21 @@ class LessonListScreen extends ConsumerWidget {
         elevation: 0.5,
         actions: [
           IconButton(
+            icon: const Icon(Icons.menu_book_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const IncorrectNoteScreen()),
+              );
+            },
+            tooltip: '오답노트',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.invalidate(lessonsListProvider),
             tooltip: '새로고침',
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       backgroundColor: Colors.grey.shade50,
