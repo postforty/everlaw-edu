@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../quiz/views/quiz_feed_screen.dart';
-import '../../lesson/views/lesson_list_screen.dart';
+import '../../incorrect_note/views/incorrect_note_screen.dart';
 
 class MainTabScreen extends StatefulWidget {
   const MainTabScreen({super.key});
@@ -13,7 +13,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     const QuizFeedScreen(),
-    const LessonListScreen(),
+    const IncorrectNoteScreen(),
   ];
 
   @override
@@ -36,8 +36,8 @@ class _MainTabScreenState extends State<MainTabScreen> {
             label: '모의고사 (Feed)',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.library_books_rounded),
-            label: '이론 강좌 (Library)',
+            icon: Icon(Icons.menu_book_rounded),
+            label: '오답 노트',
           ),
         ],
       ),

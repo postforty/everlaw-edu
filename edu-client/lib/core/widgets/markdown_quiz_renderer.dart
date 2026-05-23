@@ -23,7 +23,6 @@ class MarkdownQuizRenderer extends StatefulWidget {
 
 class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
   String? _selectedOption;
-  String? _selectedConfidence; // 'CONFIDENT', 'UNSURE', 'GUESSED'
   String _bodyMarkdown = "";
   String _quizQuestion = "";
   List<String> _quizOptions = [];
@@ -43,7 +42,6 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
     // 피드백이 리셋되거나 새로 들어오면 선택 상태 동기화 처리
     if (widget.quizFeedback == null && oldWidget.quizFeedback != null) {
       _selectedOption = null;
-      _selectedConfidence = null;
     }
   }
 
@@ -76,28 +74,35 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
     final lines = quizSection.split('\n');
     String question = "";
     List<String> options = [];
+    bool isFirstLine = true;
 
     for (var line in lines) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
 
-      if (trimmed.startsWith("### 📝") || 
-          trimmed.startsWith("[QUIZ]") || 
-          trimmed.startsWith("### [QUIZ]") ||
-          trimmed.startsWith("**문제:**") || 
-          trimmed.startsWith("Q.")) {
-        question += "$trimmed\n";
-      } else if (trimmed.startsWith("1.") || 
-                 trimmed.startsWith("2.") || 
-                 trimmed.startsWith("3.") || 
-                 trimmed.startsWith("4.") ||
-                 trimmed.startsWith("1)") || 
-                 trimmed.startsWith("2)") || 
-                 trimmed.startsWith("3)") || 
-                 trimmed.startsWith("4)") ||
-                 trimmed.startsWith("- (") ||
-                 trimmed.startsWith("* (")) {
+      // 첫 번째 퀴즈 헤더 타이틀 라인은 문항 중복 및 텍스트 낭비를 방지하기 위해 스킵
+      if (isFirstLine && 
+          (trimmed.contains("### 📝") || 
+           trimmed.contains("[QUIZ]") || 
+           trimmed.contains("### [QUIZ]"))) {
+        isFirstLine = false;
+        continue;
+      }
+      isFirstLine = false;
+
+      if (trimmed.startsWith("1.") || 
+          trimmed.startsWith("2.") || 
+          trimmed.startsWith("3.") || 
+          trimmed.startsWith("4.") ||
+          trimmed.startsWith("1)") || 
+          trimmed.startsWith("2)") || 
+          trimmed.startsWith("3)") || 
+          trimmed.startsWith("4)") ||
+          trimmed.startsWith("- (") ||
+          trimmed.startsWith("* (")) {
         options.add(trimmed);
+      } else {
+        question += "$line\n";
       }
     }
 
@@ -135,13 +140,13 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                 fontSize: 18,
               ),
               code: TextStyle(
-                backgroundColor: theme.colorScheme.surfaceVariant,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 color: theme.colorScheme.onSurfaceVariant,
                 fontFamily: 'monospace',
                 fontSize: 14,
               ),
               codeblockDecoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -157,7 +162,7 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.2)),
+                side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
               ),
               color: theme.colorScheme.surface,
               child: Padding(
@@ -196,16 +201,16 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                       
                       Color optionBorderColor = isSelected 
                           ? theme.colorScheme.primary 
-                          : theme.colorScheme.outline.withOpacity(0.3);
+                          : theme.colorScheme.outline.withValues(alpha: 0.3);
                       Color optionBgColor = isSelected 
-                          ? theme.colorScheme.primary.withOpacity(0.04)
+                          ? theme.colorScheme.primary.withValues(alpha: 0.04)
                           : Colors.transparent;
 
                       // 채점 완료 피드백 결과에 따른 시각 피드백 분기
                       if (widget.quizFeedback != null && isSelected) {
                         final isCorrect = widget.quizFeedback!['isCorrect'] as bool? ?? false;
                         optionBorderColor = isCorrect ? Colors.green : Colors.red;
-                        optionBgColor = isCorrect ? Colors.green.shade50.withOpacity(0.3) : Colors.red.shade50.withOpacity(0.3);
+                        optionBgColor = isCorrect ? Colors.green.shade50.withValues(alpha: 0.3) : Colors.red.shade50.withValues(alpha: 0.3);
                       }
 
                       return Padding(
@@ -235,84 +240,34 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                               activeColor: widget.quizFeedback != null
                                   ? ((widget.quizFeedback!['isCorrect'] as bool? ?? false) ? Colors.green : Colors.red)
                                   : theme.colorScheme.primary,
-                              onChanged: widget.quizFeedback != null ? null : (val) {
-                                setState(() {
-                                  _selectedOption = val;
-                                });
-                              },
+                              onChanged: widget.quizFeedback != null || widget.isSubmitting
+                                  ? null 
+                                  : (val) {
+                                      if (val != null) {
+                                        setState(() {
+                                          _selectedOption = val;
+                                        });
+                                        widget.onQuizSubmit(val, 'CONFIDENT');
+                                      }
+                                    },
                             ),
                           ),
                         ),
                       );
                     }).toList(),
-                    
-                    // 3. 확신도 선택 영역 (보기를 골랐을 때 자연스럽게 페이드인처럼 등장)
-                    if (_selectedOption != null && widget.quizFeedback == null) ...[
+
+                    if (widget.isSubmitting) ...[
                       const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.psychology_rounded, color: theme.colorScheme.primary, size: 22),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '🤔 이 답안에 대해 스스로 얼마나 확신하시나요?',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Colors.black87),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          _buildConfidenceButton('CONFIDENT', '확실히 알고 씀', Colors.green),
-                          const SizedBox(width: 8),
-                          _buildConfidenceButton('UNSURE', '헷갈림 / 찍음', Colors.orange),
-                          const SizedBox(width: 8),
-                          _buildConfidenceButton('GUESSED', '완전히 모름', Colors.red),
-                        ],
+                      const Center(
+                        child: CircularProgressIndicator(),
                       ),
                     ],
-
-                    const SizedBox(height: 24),
                     
-                    // 4. 피드백 결과 또는 제출 버튼 렌더링
+                    const SizedBox(height: 16),
+                    
+                    // 4. 피드백 결과 렌더링
                     if (widget.quizFeedback != null) ...[
                       _buildFeedbackWidget(theme),
-                    ] else ...[
-                      // 제출 버튼
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _selectedOption == null || _selectedConfidence == null || widget.isSubmitting
-                              ? null
-                              : () => widget.onQuizSubmit(_selectedOption!, _selectedConfidence!),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: theme.colorScheme.onPrimary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: widget.isSubmitting
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  '메타인지 답안 제출 및 채점하기',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                        ),
-                      ),
                     ]
                   ],
                 ),
@@ -325,43 +280,6 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
     );
   }
 
-  /// 확신도 버튼 생성 위젯
-  Widget _buildConfidenceButton(String value, String label, Color color) {
-    final isSelected = _selectedConfidence == value;
-    final theme = Theme.of(context);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedConfidence = value;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(0.12) : Colors.grey.shade50,
-            border: Border.all(
-              color: isSelected ? color : Colors.grey.shade300,
-              width: isSelected ? 2 : 1,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? color : Colors.grey.shade700,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// 메타인지 요약 리포트를 동적으로 그려주는 프리미엄 피드백 위젯
   Widget _buildFeedbackWidget(ThemeData theme) {
     final isCorrect = widget.quizFeedback!['isCorrect'] as bool? ?? false;
@@ -369,32 +287,32 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
     final status = widget.quizFeedback!['metaCognitionStatus'] as String? ?? 'safe';
 
     Color cardColor = Colors.green;
-    String statusTitle = "안전지대 (완벽 내재화) 🟢";
+    String statusTitle = "안전지대 (완벽 내재화)";
     String statusSub = "축하합니다! 개념을 정확히 알고 맞추셨습니다.";
     IconData statusIcon = Icons.verified_user_rounded;
 
     switch (status) {
       case 'safe':
         cardColor = Colors.green.shade600;
-        statusTitle = "안전 지대 (완벽 내재화) 🟢";
+        statusTitle = "안전 지대 (완벽 내재화)";
         statusSub = "개념을 완벽하게 알고 맞추셨습니다. 실무에 바로 적용 가능한 튼튼한 지식입니다!";
         statusIcon = Icons.verified_user_rounded;
         break;
       case 'warning_guessed':
         cardColor = Colors.blue.shade600;
-        statusTitle = "보완 구역 (어설픈 지식) 🔵";
+        statusTitle = "보완 구역 (어설픈 지식)";
         statusSub = "정답은 맞췄으나 헷갈리거나 찍으신 문항입니다. 다음에 틀릴 가능성이 높으므로 아래 해설을 정독하세요!";
         statusIcon = Icons.help_outline_rounded;
         break;
       case 'warning_illusion':
         cardColor = Colors.orange.shade700;
-        statusTitle = "착각 구역 (개념 왜곡 경고) 🟠";
+        statusTitle = "착각 구역 (개념 왜곡 경고)";
         statusSub = "[경고!] 스스로 안다고 100% 확신하셨지만 오답이 났습니다. 지식의 혼동을 바로잡는 강도 높은 재학습이 요구됩니다.";
         statusIcon = Icons.report_problem_rounded;
         break;
       case 'danger_unknown':
         cardColor = Colors.red.shade700;
-        statusTitle = "재학습 구역 (개념 무지) 🔴";
+        statusTitle = "재학습 구역 (개념 무지)";
         statusSub = "법안에 대한 이해도가 현저히 낮아 틀린 문항입니다. 기초 내용과 핵심 지침을 다시 학습하시기 바랍니다.";
         statusIcon = Icons.dangerous_rounded;
         break;
@@ -405,7 +323,7 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
       curve: Curves.easeInOut,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardColor.withOpacity(0.04),
+        color: cardColor.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: cardColor,
@@ -475,7 +393,7 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                 label: const Text('AI 도우미에게 이 문제 질문하기', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: cardColor,
-                  side: BorderSide(color: cardColor.withOpacity(0.5)),
+                  side: BorderSide(color: cardColor.withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),

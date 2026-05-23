@@ -41,7 +41,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
                   Icon(
                     Icons.rule_folder_rounded,
                     size: 80,
-                    color: theme.colorScheme.primary.withOpacity(0.15),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -81,13 +81,19 @@ class ApprovalQueueScreen extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    const Text(
-                      'AI Agent 감시 작동 중 🟢',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.radio_button_checked_rounded, color: Colors.green, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'AI Agent 감시 작동 중',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     )
                   ],
                 ),
@@ -164,7 +170,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
   }
 
   Widget _buildQueueCard(BuildContext context, ApprovalRequest request, ThemeData theme) {
-    final score = request.hallucinationScore as double;
+    final score = request.hallucinationScore;
     final isSafe = score <= 0.3;
     final scoreColor = isSafe 
         ? Colors.green.shade600 
@@ -200,7 +206,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.08),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(

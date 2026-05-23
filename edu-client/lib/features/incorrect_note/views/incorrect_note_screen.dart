@@ -44,14 +44,14 @@ class IncorrectNoteScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
+                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         )
@@ -72,7 +72,7 @@ class IncorrectNoteScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '현재 가장 취약한 조항: $topWeaknessLawRef',
-                                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                               ),
                             ],
                           ),
@@ -147,7 +147,7 @@ class IncorrectNoteScreen extends ConsumerWidget {
                                     icon: const Icon(Icons.smart_toy_rounded, size: 18),
                                     label: const Text('AI 질문하기'),
                                   ),
-                                  ElevatedButton.icon(
+                                  IconButton(
                                     onPressed: () {
                                       // [U-7] 학습 완료(삭제)
                                       ref.read(incorrectNoteProvider.notifier).deleteNote(note.id);
@@ -155,13 +155,8 @@ class IncorrectNoteScreen extends ConsumerWidget {
                                         const SnackBar(content: Text('해당 오답 항목을 학습 완료(삭제) 처리했습니다.')),
                                       );
                                     },
-                                    icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                                    label: const Text('학습 완료'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green.shade50,
-                                      foregroundColor: Colors.green.shade700,
-                                      elevation: 0,
-                                    ),
+                                    icon: Icon(Icons.remove_circle_outline_rounded, color: theme.colorScheme.primary, size: 22),
+                                    tooltip: '학습 완료 및 오답 제거',
                                   ),
                                 ],
                               ),

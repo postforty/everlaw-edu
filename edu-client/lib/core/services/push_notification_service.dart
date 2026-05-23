@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 
 // Firebase Cloud Messaging 연동 스키마 캡슐화 (추후 firebase_messaging 패키지 임포트 연동 대응)

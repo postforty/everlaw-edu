@@ -34,9 +34,9 @@ class AiValidationCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scoreColor.withOpacity(0.3), width: 1.5),
+        side: BorderSide(color: scoreColor.withValues(alpha: 0.3), width: 1.5),
       ),
-      color: scoreColor.withOpacity(0.02),
+      color: scoreColor.withValues(alpha: 0.02),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -60,7 +60,7 @@ class AiValidationCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: scoreColor.withOpacity(0.1),
+                    color: scoreColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

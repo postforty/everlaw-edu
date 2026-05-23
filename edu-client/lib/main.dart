@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'features/lesson/views/lesson_list_screen.dart';
 import 'features/main/views/main_tab_screen.dart';
-import 'features/approval/views/approval_queue_screen.dart';
 import 'core/network/auth_provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'features/incorrect_note/providers/incorrect_note_provider.dart';
+import 'core/providers/shared_preferences_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,24 +50,12 @@ class WelcomeScreen extends ConsumerStatefulWidget {
   ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends ConsumerState<WelcomeScreen> with SingleTickerProviderStateMixin {
-  bool _isLoading = true;
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   String _statusText = '최신 법률 데이터베이스 연동 중...';
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    );
-
     _startInitialization();
   }
 
@@ -95,11 +81,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> with SingleTicker
     );
   }
 
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

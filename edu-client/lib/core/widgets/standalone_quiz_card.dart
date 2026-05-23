@@ -5,21 +5,39 @@ class StandaloneQuizCard extends StatefulWidget {
   final QuizItem quiz;
   final Function(bool isCorrect) onAnswerSelected;
   final VoidCallback onChatbotRequested;
+  final VoidCallback? onNextPressed;
 
   const StandaloneQuizCard({
     super.key,
     required this.quiz,
     required this.onAnswerSelected,
     required this.onChatbotRequested,
+    this.onNextPressed,
   });
 
   @override
   State<StandaloneQuizCard> createState() => _StandaloneQuizCardState();
 }
 
-class _StandaloneQuizCardState extends State<StandaloneQuizCard> {
+class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTickerProviderStateMixin {
   String? _selectedOption;
   bool? _isCorrect;
+  late AnimationController _swipeAnimController;
+
+  @override
+  void initState() {
+    super.initState();
+    _swipeAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: false);
+  }
+
+  @override
+  void dispose() {
+    _swipeAnimController.dispose();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(covariant StandaloneQuizCard oldWidget) {
@@ -99,7 +117,7 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> {
               }
             } else if (isSelected) {
               borderColor = theme.colorScheme.primary;
-              bgColor = theme.colorScheme.primary.withOpacity(0.05);
+              bgColor = theme.colorScheme.primary.withValues(alpha: 0.05);
             }
 
             return Padding(
@@ -142,7 +160,7 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.shade50.withOpacity(0.5),
+                color: Colors.red.shade50.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.red.shade200),
               ),
@@ -171,18 +189,63 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> {
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
+                    child: ElevatedButton.icon(
                       onPressed: widget.onChatbotRequested,
                       icon: const Icon(Icons.smart_toy_rounded, size: 18),
-                      label: const Text('AI 도우미에게 상세 질문하기'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade700,
-                        side: BorderSide(color: Colors.red.shade300),
+                      label: const Text(
+                        'AI 도우미에게 상세 질문하기',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade700,
+                        foregroundColor: Colors.white,
+                        elevation: 1,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
+                  if (widget.onNextPressed != null) ...[
+                    const SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: widget.onNextPressed,
+                      behavior: HitTestBehavior.opaque,
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _swipeAnimController,
+                          builder: (context, child) {
+                            final double animValue = _swipeAnimController.value;
+                            
+                            // 오른쪽(+24)에서 시작해서 왼쪽(-24)으로 쓸어가는 단방향 궤적
+                            final double xOffset = 24.0 - (animValue * 48.0);
+                            
+                            // 자연스럽게 나타났다가 쓸어가면서 서서히 사라지는(Fade Out) 루프 보간
+                            double opacity = 0.0;
+                            if (animValue < 0.2) {
+                              opacity = (animValue / 0.2) * 0.75;
+                            } else {
+                              opacity = 0.75 * (1.0 - (animValue - 0.2) / 0.8);
+                            }
+
+                            return SizedBox(
+                              height: 32,
+                              child: Transform.translate(
+                                offset: Offset(xOffset, 0),
+                                child: Opacity(
+                                  opacity: opacity,
+                                  child: Icon(
+                                    Icons.touch_app_rounded,
+                                    color: Colors.grey.shade400,
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

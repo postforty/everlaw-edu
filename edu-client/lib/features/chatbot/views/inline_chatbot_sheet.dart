@@ -20,7 +20,7 @@ class InlineChatbotSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (context) => InlineChatbotSheet(
         lawReference: lawReference,
         initialContext: initialContext,
@@ -94,12 +94,12 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
           height: MediaQuery.of(context).size.height * 0.75,
           padding: EdgeInsets.only(bottom: bottomInset),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.white.withValues(alpha: 0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, -5),
               ),
@@ -125,7 +125,7 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -200,7 +200,7 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -303,8 +303,8 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
             fontSize: 12,
           ),
         ),
-        backgroundColor: theme.colorScheme.primary.withOpacity(0.06),
-        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.06),
+        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         onPressed: () => _handleSend(label),
       ),

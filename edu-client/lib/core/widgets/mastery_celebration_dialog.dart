@@ -11,7 +11,7 @@ class MasteryCelebrationDialog extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Mastery Dialog',
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, animation, secondaryAnimation) {
         return FadeTransition(
@@ -39,7 +39,7 @@ class MasteryCelebrationDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.3),
+                color: Colors.amber.withValues(alpha: 0.3),
                 blurRadius: 20,
                 spreadRadius: 5,
               ),
@@ -67,7 +67,7 @@ class MasteryCelebrationDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                '[$lawReference]\n관련 퀴즈 3회 연속 정답 달성🎉',
+                '[$lawReference]\n관련 퀴즈 3회 연속 정답 달성',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,

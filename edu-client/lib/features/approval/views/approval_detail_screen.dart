@@ -91,7 +91,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary.withOpacity(0.06),
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -290,7 +290,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, -4),
           )
@@ -363,10 +363,22 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              approved 
-                  ? '해당 교안이 최종 승인되었습니다. 학습자용 배포 및 푸시 알림이 발송되었습니다. 🎉' 
-                  : '교안 검토가 반려 처리되었습니다.',
+            content: Row(
+              children: [
+                Icon(
+                  approved ? Icons.verified_user_rounded : Icons.report_gmailerrorred_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    approved 
+                        ? '해당 교안이 최종 승인되었습니다. 학습자용 배포 및 푸시 알림이 발송되었습니다.' 
+                        : '교안 검토가 반려 처리되었습니다.',
+                  ),
+                ),
+              ],
             ),
             backgroundColor: approved ? Colors.green.shade800 : Colors.red.shade800,
           ),

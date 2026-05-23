@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/markdown_quiz_renderer.dart';
+import '../../../core/widgets/mastery_celebration_dialog.dart';
 import '../providers/incorrect_note_provider.dart';
 
 class AdaptiveQuizClinicScreen extends ConsumerStatefulWidget {
@@ -30,10 +31,10 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
     setState(() {
       _isLoading = false;
       _simulatedMarkdown = '''
-### 🎯 AI 맞춤형 취약점 극복 훈련
+### AI 맞춤형 취약점 극복 훈련
 회원님의 취약 조항인 **${widget.weakLawRef}**에 대하여 완전히 새로운 실무 현장 시나리오의 변형 퀴즈가 생성되었습니다.
 
-### 📝 [QUIZ] ${widget.weakLawRef} 변형 훈련
+### [QUIZ] ${widget.weakLawRef} 변형 훈련
 당신은 신축 건설 현장의 안전 관리자입니다. 고소작업(높이 3.5m)을 진행하던 중 작업자가 안전대를 걸지 않고 작업하는 것을 발견했습니다. 가장 올바른 즉각 조치는 무엇입니까?
 
 1. 작업이 끝날 때까지 기다렸다가 경고한다.
@@ -44,7 +45,7 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
     });
   }
 
-  void _handleSubmit(String answer, String confidence) {
+  void _handleSubmit(String answer, String confidence) async {
     final isCorrect = answer.startsWith('2.');
     setState(() {
       _feedback = {
@@ -56,16 +57,51 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
       };
     });
 
+    // 비동기로 연속 정답 저장 및 자동 졸업 체크
+    final achievedMastery = await ref.read(incorrectNoteProvider.notifier)
+        .registerQuizResult(widget.weakLawRef, isCorrect);
+
     if (isCorrect) {
       // 맞췄을 경우 취약 지수 극복 피드백 제공
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 훌륭합니다! 취약 지수가 안전 구역으로 보정되었습니다.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+
+        if (achievedMastery && context.mounted) {
+          // 3회 연속 정답 시 졸업 축하 팝업 다이얼로그 호출
+          MasteryCelebrationDialog.show(context, widget.weakLawRef);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.school_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('개념 정복 성공! 해당 법령 조항이 오답노트에서 완전히 자동 졸업 처리되었습니다.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // 일반 정답 시 피드백 및 연속 정답 상태 안내
+          final currentCount = ref.read(incorrectNoteProvider.notifier).getConsecutiveCorrectCount(widget.weakLawRef);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('정답입니다! (현재 연속 정답: $currentCount회 / 3회 달성 시 자동 졸업)'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.blue.shade700,
+            ),
+          );
+        }
+        
         Navigator.pop(context);
       });
     }

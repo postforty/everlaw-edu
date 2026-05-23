@@ -18,9 +18,14 @@ class QuizFeedScreen extends ConsumerStatefulWidget {
 class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  final Map<int, bool> _answeredMap = {};
 
   void _onAnswerSelected(BuildContext context, bool isCorrect, int index, var quizList) {
     final quiz = quizList[index];
+
+    setState(() {
+      _answeredMap[index] = true;
+    });
 
     if (isCorrect) {
       // 0.8초 딜레이 후 다음 문제로 자동 전환
@@ -31,18 +36,29 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
         final achievedMastery = await ref.read(incorrectNoteProvider.notifier)
             .registerQuizResult(quiz.lawReference, true);
 
-        if (achievedMastery && mounted) {
+        if (achievedMastery && context.mounted) {
           MasteryCelebrationDialog.show(context, quiz.lawReference);
         }
 
-        if (mounted && _currentIndex < quizList.length - 1) {
+        if (context.mounted && _currentIndex < quizList.length - 1) {
           _pageController.nextPage(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOut,
           );
-        } else if (mounted && _currentIndex == quizList.length - 1) {
+        } else if (context.mounted && _currentIndex == quizList.length - 1) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('오늘의 모의고사를 모두 완료했습니다! 🎉'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('오늘의 모의고사를 모두 완료했습니다!'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       });
@@ -95,7 +111,9 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
       backgroundColor: Colors.grey.shade50,
       body: PageView.builder(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // 스와이프 차단 (정답을 맞춰야만 넘어감)
+        physics: _answeredMap[_currentIndex] == true
+            ? const BouncingScrollPhysics() // 오답 해설 감상 및 풀이 완료 시 드래그(스와이프) 다음 문제 유연 진입 허용
+            : const NeverScrollableScrollPhysics(), // 미풀이 상태에서는 강제 드래그 차단
         onPageChanged: (idx) => setState(() => _currentIndex = idx),
         itemCount: quizzes.length,
         itemBuilder: (context, index) {
@@ -104,8 +122,31 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
             quiz: quiz,
             onAnswerSelected: (isCorrect) => _onAnswerSelected(context, isCorrect, index, quizzes),
             onChatbotRequested: () {
-              final contextMsg = "[오답 질문 문맥]\n- 문제: \${quiz.question}\n- 법적 근거: \${quiz.lawReference}\n- 상세 해설: \${quiz.explanation}\n\n위 내용과 관련하여 상세한 설명을 부탁드립니다.";
+              final contextMsg = "[오답 질문 문맥]\n- 문제: ${quiz.question}\n- 법적 근거: ${quiz.lawReference}\n- 상세 해설: ${quiz.explanation}\n\n위 내용과 관련하여 상세한 설명을 부탁드립니다.";
               InlineChatbotSheet.show(context, quiz.lawReference, initialContext: contextMsg);
+            },
+            onNextPressed: () {
+              if (_currentIndex < quizzes.length - 1) {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text('오늘의 모의고사를 모두 완료했습니다!'),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
           );
         },

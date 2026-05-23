@@ -2,11 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/incorrect_note.dart';
-
-// Provider for SharedPreferences
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('sharedPreferencesProvider must be overridden in main');
-});
+import '../../../core/providers/shared_preferences_provider.dart';
 
 class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   final SharedPreferences _prefs;
@@ -95,6 +91,12 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
       await _saveConsecutiveMap(map);
     }
     return false;
+  }
+
+  /// 특정 법령 조항에 대한 현재까지의 연속 정답 횟수를 안전하게 조회하는 퍼블릭 API
+  int getConsecutiveCorrectCount(String lawReference) {
+    final map = _getConsecutiveMap();
+    return map[lawReference] ?? 0;
   }
 }
 
