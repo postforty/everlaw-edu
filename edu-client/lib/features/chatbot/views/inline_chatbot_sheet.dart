@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_message.dart';
 import '../providers/chatbot_provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class InlineChatbotSheet extends ConsumerStatefulWidget {
   final String? lawReference;
@@ -206,14 +207,23 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
                             ),
                           ],
                         ),
-                        child: Text(
-                          msg.text,
-                          style: TextStyle(
-                            color: isUser ? Colors.white : Colors.black87,
-                            fontSize: 14.5,
-                            height: 1.5,
-                          ),
-                        ),
+                        child: isUser 
+                            ? Text(
+                                msg.text,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14.5,
+                                  height: 1.5,
+                                ),
+                              )
+                            : MarkdownBody(
+                                data: msg.text,
+                                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                                  p: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
+                                  strong: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
+                                  listBullet: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
+                                ),
+                              ),
                       ),
                     );
                   },

@@ -112,74 +112,75 @@ class IncorrectNoteScreen extends ConsumerWidget {
                           ? DateFormat('yyyy.MM.dd HH:mm').format(DateTime.tryParse(note.incorrectAt) ?? DateTime.now())
                           : '';
 
-                      return Card(
+                      return Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+                          boxShadow: AppShadows.premiumSoft,
                         ),
-                        elevation: 0,
-                        color: Colors.white,
-                        child: Container(
-                          decoration: BoxDecoration(
+                        child: Material(
+                          color: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: AppShadows.premiumSoft,
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: Theme(
                             data: theme.copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            title: Text(
-                              note.lawReference,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                dateStr,
-                                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                              ),
-                            ),
-                            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            children: [
-                              const Divider(),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  note.explanation,
-                                  style: TextStyle(color: Colors.grey.shade800, fontSize: 14, height: 1.5),
+                            child: ExpansionTile(
+                                title: Text(
+                                  note.lawReference,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      final contextMsg = "[오답 복습 문맥]\n- 법적 근거: ${note.lawReference}\n- 해설: ${note.explanation}\n\n이 부분에 대해 다시 설명해 주시겠어요?";
-                                      InlineChatbotSheet.show(context, note.lawReference, initialContext: contextMsg);
-                                    },
-                                    icon: const Icon(Icons.smart_toy_rounded, size: 18),
-                                    label: const Text('AI 질문하기'),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    dateStr,
+                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                                   ),
-                                  IconButton(
-                                    onPressed: () {
-                                      // [U-7] 학습 완료(삭제)
-                                      ref.read(incorrectNoteProvider.notifier).deleteNote(note.id);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('해당 오답 항목을 학습 완료(삭제) 처리했습니다.')),
-                                      );
-                                    },
-                                    icon: Icon(Icons.remove_circle_outline_rounded, color: theme.colorScheme.primary, size: 22),
-                                    tooltip: '학습 완료 및 오답 제거',
+                                ),
+                                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                children: [
+                                  const Divider(),
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      note.explanation,
+                                      style: TextStyle(color: Colors.grey.shade800, fontSize: 14, height: 1.5),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          final contextMsg = "[오답 복습 문맥]\n- 법적 근거: ${note.lawReference}\n- 해설: ${note.explanation}\n\n이 부분에 대해 다시 설명해 주시겠어요?";
+                                          InlineChatbotSheet.show(context, note.lawReference, initialContext: contextMsg);
+                                        },
+                                        icon: const Icon(Icons.smart_toy_rounded, size: 18),
+                                        label: const Text('AI 질문하기'),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          // [U-7] 학습 완료(삭제)
+                                          ref.read(incorrectNoteProvider.notifier).deleteNote(note.id);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('해당 오답 항목을 학습 완료(삭제) 처리했습니다.')),
+                                          );
+                                        },
+                                        icon: Icon(Icons.remove_circle_outline_rounded, color: theme.colorScheme.primary, size: 22),
+                                        tooltip: '학습 완료 및 오답 제거',
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
                             ),
                           ),
-                        ),
-                      );
+                        );
                     },
                   ),
                 ),
