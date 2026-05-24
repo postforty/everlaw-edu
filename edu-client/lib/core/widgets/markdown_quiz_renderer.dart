@@ -266,7 +266,7 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                     const SizedBox(height: 16),
                     
                     // 4. 피드백 결과 렌더링
-                    if (widget.quizFeedback != null) ...[
+                    if (widget.quizFeedback != null && !(widget.quizFeedback!['isCorrect'] as bool? ?? false)) ...[
                       _buildFeedbackWidget(theme),
                     ]
                   ],
@@ -363,42 +363,44 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 12),
-          Text(
-            '상세 컴플라이언스 법리 해설',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14.5,
-              color: cardColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            explanation,
-            style: TextStyle(
-              color: Colors.grey.shade900,
-              fontSize: 14,
-              height: 1.55,
-            ),
-          ),
-          if (!isCorrect && widget.onChatbotRequested != null) ...[
+          if (!isCorrect) ...[
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: widget.onChatbotRequested,
-                icon: const Icon(Icons.smart_toy_rounded, size: 18),
-                label: const Text('AI 도우미에게 이 문제 질문하기', style: TextStyle(fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: cardColor,
-                  side: BorderSide(color: cardColor.withValues(alpha: 0.5)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+            const Divider(),
+            const SizedBox(height: 12),
+            Text(
+              '상세 컴플라이언스 법리 해설',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.5,
+                color: cardColor,
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              explanation,
+              style: TextStyle(
+                color: Colors.grey.shade900,
+                fontSize: 14,
+                height: 1.55,
+              ),
+            ),
+            if (widget.onChatbotRequested != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: widget.onChatbotRequested,
+                  icon: const Icon(Icons.smart_toy_rounded, size: 18),
+                  label: const Text('AI 도우미에게 이 문제 질문하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cardColor,
+                    side: BorderSide(color: cardColor.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ],
       ),

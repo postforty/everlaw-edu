@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/incorrect_note_provider.dart';
 import '../../chatbot/views/inline_chatbot_sheet.dart';
 import 'adaptive_quiz_clinic_screen.dart';
+import '../../../core/theme/app_theme.dart';
 
 class IncorrectNoteScreen extends ConsumerWidget {
   const IncorrectNoteScreen({super.key});
@@ -26,11 +27,10 @@ class IncorrectNoteScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('나의 오답노트', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
-        elevation: 0.5,
+        elevation: 0,
       ),
-      backgroundColor: Colors.grey.shade50,
       body: notes.isEmpty
           ? const Center(
               child: Text('아직 저장된 오답이 없습니다.\n학습을 통해 지식을 넓혀보세요!', textAlign: TextAlign.center),
@@ -59,7 +59,7 @@ class IncorrectNoteScreen extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.psychology_rounded, color: Colors.white, size: 40),
+                        const Icon(Icons.psychology_rounded, color: Colors.white, size: 36),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -71,12 +71,15 @@ class IncorrectNoteScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '현재 가장 취약한 조항: $topWeaknessLawRef',
+                                '취약 조항: $topWeaknessLawRef',
                                 style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 16),
                         ElevatedButton(
                           onPressed: () {
                             Navigator.push(
@@ -87,9 +90,12 @@ class IncorrectNoteScreen extends ConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: theme.colorScheme.primary,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            minimumSize: const Size(0, 36),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           ),
-                          child: const Text('훈련 시작', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: const Text('훈련 시작', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         ),
                       ],
                     ),
@@ -107,11 +113,20 @@ class IncorrectNoteScreen extends ConsumerWidget {
                           : '';
 
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 1,
-                        child: Theme(
-                          data: theme.copyWith(dividerColor: Colors.transparent),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+                        ),
+                        elevation: 0,
+                        color: Colors.white,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: AppShadows.premiumSoft,
+                          ),
+                          child: Theme(
+                            data: theme.copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
                             title: Text(
                               note.lawReference,
@@ -161,6 +176,7 @@ class IncorrectNoteScreen extends ConsumerWidget {
                                 ],
                               ),
                             ],
+                            ),
                           ),
                         ),
                       );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/quiz/models/quiz_item.dart';
+import '../theme/app_theme.dart';
 
 class StandaloneQuizCard extends StatefulWidget {
   final QuizItem quiz;
@@ -64,8 +65,16 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 120), // Extra bottom padding for floating nav
+      child: Container(
+        padding: const EdgeInsets.all(32.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppShadows.premiumSoft,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -122,18 +131,29 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
-              child: InkWell(
-                onTap: isAnswered ? null : () => _handleSelection(option),
-                borderRadius: BorderRadius.circular(16),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    border: Border.all(color: borderColor, width: isSelected || (isAnswered && isThisCorrect) ? 2 : 1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 200),
+                scale: (isSelected && !isThisCorrect) ? 0.98 : (isAnswered && isThisCorrect ? 1.02 : 1.0),
+                curve: Curves.easeOutBack,
+                child: InkWell(
+                  onTap: isAnswered ? null : () => _handleSelection(option),
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      border: Border.all(color: borderColor, width: isSelected || (isAnswered && isThisCorrect) ? 2 : 1),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: isAnswered ? null : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Row(
                     children: [
                       Expanded(
                         child: Text(
@@ -151,8 +171,9 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
                   ),
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          );
+        }).toList(),
 
           // 오답 시 해설 패널 표시
           if (_isCorrect != null && !_isCorrect!) ...[
@@ -252,6 +273,6 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
           ]
         ],
       ),
-    );
+    ));
   }
 }

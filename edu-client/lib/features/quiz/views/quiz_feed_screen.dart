@@ -93,9 +93,8 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('오늘의 모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           Center(
             child: Padding(
@@ -108,7 +107,6 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
           )
         ],
       ),
-      backgroundColor: Colors.grey.shade50,
       body: PageView.builder(
         controller: _pageController,
         physics: _answeredMap[_currentIndex] == true
