@@ -1,37 +1,30 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/incorrect_note.dart';
-import '../../../core/providers/shared_preferences_provider.dart';
+import '../../../core/network/dio_provider.dart';
 
 class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
-  final SharedPreferences _prefs;
-  static const String _storageKey = 'incorrect_notes_list';
-  static const String _consecutiveKey = 'consecutive_correct_map';
+  final Dio _dio;
 
-  IncorrectNoteNotifier(this._prefs) : super([]) {
-    _loadNotes();
+  IncorrectNoteNotifier(this._dio) : super([]) {
+    loadNotes();
   }
 
-  void _loadNotes() {
-    final String? notesJson = _prefs.getString(_storageKey);
-    if (notesJson != null) {
-      try {
-        final List<dynamic> decodedList = json.decode(notesJson);
+  Future<void> loadNotes() async {
+    try {
+      final response = await _dio.get('/api/v1/progress/incorrect-notes');
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedList = response.data;
         state = decodedList.map((item) => IncorrectNote.fromMap(item)).toList();
-      } catch (e) {
-        state = [];
       }
+    } catch (e) {
+      // 에러 발생 시 처리 (현재는 로그 또는 무시)
     }
   }
 
-  Future<void> _saveNotes() async {
-    final String notesJson = json.encode(state.map((e) => e.toMap()).toList());
-    await _prefs.setString(_storageKey, notesJson);
-  }
-
   Future<void> addNote(IncorrectNote note) async {
-    // If same quizId exists, overwrite it, else add new
+    // API 서버에서 오답노트 추가 처리를 할 수도 있지만, 
+    // 로컬 상태를 우선 업데이트하고 registerQuizResult 시 함께 서버로 전송됨
     final existingIndex = state.indexWhere((n) => n.quizId == note.quizId);
     if (existingIndex >= 0) {
       final newState = [...state];
@@ -40,12 +33,11 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
     } else {
       state = [note, ...state];
     }
-    await _saveNotes();
   }
 
   Future<void> deleteNote(String id) async {
     state = state.where((note) => note.id != id).toList();
-    await _saveNotes();
+    // TODO: 서버에 삭제 요청 (필요한 경우)
   }
 
   Future<void> archiveByLawReference(String lawReference) async {
@@ -55,52 +47,36 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
       }
       return note;
     }).toList();
-    await _saveNotes();
-  }
-
-  // Tracking consecutive correct answers
-  Map<String, int> _getConsecutiveMap() {
-    final String? mapJson = _prefs.getString(_consecutiveKey);
-    if (mapJson != null) {
-      return Map<String, int>.from(json.decode(mapJson));
-    }
-    return {};
-  }
-
-  Future<void> _saveConsecutiveMap(Map<String, int> map) async {
-    await _prefs.setString(_consecutiveKey, json.encode(map));
   }
 
   /// returns true if mastery achieved (consecutive reached 3)
   Future<bool> registerQuizResult(String lawReference, bool isCorrect) async {
-    final map = _getConsecutiveMap();
-    if (isCorrect) {
-      map[lawReference] = (map[lawReference] ?? 0) + 1;
-      await _saveConsecutiveMap(map);
-      if (map[lawReference]! >= 3) {
-        // Mastery achieved
-        await archiveByLawReference(lawReference);
-        // Reset counter after mastery
-        map[lawReference] = 0;
-        await _saveConsecutiveMap(map);
-        return true; 
+    try {
+      final response = await _dio.post(
+        '/api/v1/progress/quiz-result',
+        data: {
+          'lawReference': lawReference,
+          'isCorrect': isCorrect,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final masteryAchieved = data['masteryAchieved'] ?? false;
+        
+        if (masteryAchieved) {
+          await archiveByLawReference(lawReference);
+        }
+        return masteryAchieved;
       }
-    } else {
-      // Reset on incorrect
-      map[lawReference] = 0;
-      await _saveConsecutiveMap(map);
+    } catch (e) {
+      return false;
     }
     return false;
-  }
-
-  /// 특정 법령 조항에 대한 현재까지의 연속 정답 횟수를 안전하게 조회하는 퍼블릭 API
-  int getConsecutiveCorrectCount(String lawReference) {
-    final map = _getConsecutiveMap();
-    return map[lawReference] ?? 0;
   }
 }
 
 final incorrectNoteProvider = StateNotifierProvider<IncorrectNoteNotifier, List<IncorrectNote>>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return IncorrectNoteNotifier(prefs);
+  final dio = ref.watch(dioProvider);
+  return IncorrectNoteNotifier(dio);
 });

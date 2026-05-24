@@ -114,7 +114,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                     ),
                     child: SingleChildScrollView(
                       child: Text(
-                        _getMockLawReferenceBody(widget.request.lawReference),
+                        widget.request.lawReferenceBody,
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.6,
@@ -239,7 +239,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                     padding: const EdgeInsets.all(12),
                     color: Colors.grey.shade50,
                     child: Text(
-                      _getMockLawReferenceBody(widget.request.lawReference),
+                      widget.request.lawReferenceBody,
                       style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
                     ),
                   ),
@@ -396,49 +396,4 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
     }
   }
 
-  /// 팩트 대조를 보조하기 위해 법령 식별 키에 따른 조항의 가상 원본 내용을 서빙
-  String _getMockLawReferenceBody(String lawRef) {
-    if (lawRef.contains("중대재해") || lawRef.contains("safety")) {
-      return """
-### 중대재해 처벌 등에 관한 법률
-**제4조 (사업주와 경영책임자등의 안전 및 보건 확보의무)**
-
-① 사업주 또는 경영책임자등은 실질적으로 지배ㆍ운영ㆍ관리하는 사업 또는 사업장 및 종사자의 안전ㆍ보건상 유해 또는 위험을 방지하기 위하여 다음 각 호에 따른 조치를 하여야 한다.
-1. 재해예방에 필요한 인력 및 예산 등 안전보건관리체계의 구축 및 그 이행에 관한 조치
-2. 재해 발생 시 재발방지 대책의 수립 및 그 이행에 관한 조치
-3. 중앙행정기관ㆍ지방자치단체가 관계 법령에 따라 개선, 시정 등을 명한 사항의 이행에 관한 조치
-4. 안전ㆍ보건 관계 법령에 따른 의무이행에 필요한 관리상의 조치
-
-**제6조 (중대산업재해 사업주 및 경영책임자등의 처벌)**
-
-① 제4조 또는 제5조를 위반하여 제2조제2호가목의 중대산업재해에 이르게 한 사업주 또는 경영책임자등은 1년 이상의 징역 또는 10억원 이하의 벌금에 처한다. 이 경우 징역과 벌금은 병과할 수 있다.
-② 제4조 또는 제5조를 위반하여 제2조제2호가목의 중대산업재해에 이르게 한 법인 또는 기관은 50억원 이하의 벌금에 처한다.
-""";
-    } else if (lawRef.contains("근로기준") || lawRef.contains("labor")) {
-      return """
-### 근로기준법
-**제53조 (연장 근로의 제한)**
-
-① 당사자 간에 합의하면 1주간에 12시간을 한도로 제50조의 근로시간을 연장할 수 있다.
-② 당사자 간에 합의하면 1주간에 12시간을 한도로 제51조 및 제51조의2의 근로시간을 연장할 수 있고, 제52조제1항제2호의 정산기간을 평균하여 1주간에 12시간을 한도로 연장할 수 있다.
-
-**제110조 (벌칙)**
-
-제53조제1항ㆍ제2항을 위반한 자는 2년 이하의 징역 또는 2천만원 이하의 벌금에 처한다.
-""";
-    } else {
-      return """
-### 산업안전보건법
-**제38조 (안전조치)**
-
-① 사업주는 다음 각 호의 어느 하나에 해당하는 위험으로 인한 산업재해를 예방하기 위하여 필요한 조치를 하여야 한다.
-1. 기계ㆍ기구, 그 밖의 설비에 의한 위험
-2. 폭발성, 발화성 및 인화성 물질 등에 의한 위험
-3. 전기, 열, 그 밖의 에너지에 의한 위험
-
-② 사업주는 굴착, 채석, 하역, 벌목, 운송, 투고, 해체, 파괴, 그 밖의 작업 방법으로 인하여 발생하는 위험을 예방하기 위하여 필요한 조치를 하여야 한다.
-③ 사업주는 추락할 위험이 있는 장소, 토사ㆍ구축물 등이 붕괴할 우려가 있는 장소, 그 밖에 작업 중 위험이 발생할 우려가 있는 장소에는 그 위험을 예방하기 위하여 필요한 조치를 하여야 한다.
-""";
-    }
-  }
 }

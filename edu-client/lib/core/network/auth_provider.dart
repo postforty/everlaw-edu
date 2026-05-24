@@ -13,15 +13,9 @@ class AuthService {
 
   AuthService(this._dio);
 
-  /// 역할에 따른 데모 자동 로그인/회원가입 처리
-  Future<bool> authenticateDemoUser(DemoRole role) async {
-    final String email = role == DemoRole.learner ? 'learner@everlaw.edu' : 'admin@everlaw.edu';
-    const String password = 'password123!';
-    final String apiRole = role == DemoRole.learner ? 'LEARNER' : 'ADMIN';
-    final String jobCategory = role == DemoRole.learner ? '생산·안전 경영책임자' : 'ADMIN';
-
+  /// 이메일/비밀번호 기반 실제 로그인
+  Future<bool> login(String email, String password) async {
     try {
-      // 1단계: 로그인 시도
       final response = await _dio.post(
         '/api/v1/auth/login',
         data: {
@@ -35,36 +29,45 @@ class AuthService {
         await AuthInterceptor.saveToken(token);
         return true;
       }
-    } on DioException catch (e) {
-      // 400 Bad Request 또는 403 Forbidden 등으로 로그인이 실패했거나 계정이 존재하지 않는 경우 회원가입 시도
-      if (e.response != null && (e.response!.statusCode == 400 || e.response!.statusCode == 403 || e.response!.statusCode == 401 || e.response!.statusCode == 500)) {
-        try {
-          final signUpResponse = await _dio.post(
-            '/api/v1/auth/signup',
-            data: {
-              'email': email,
-              'password': password,
-              'role': apiRole,
-              'jobCategory': jobCategory,
-            },
-          );
-
-          if (signUpResponse.statusCode == 201 || signUpResponse.statusCode == 200) {
-            final token = signUpResponse.data['token'] as String;
-            await AuthInterceptor.saveToken(token);
-            return true;
-          }
-        } catch (signUpError) {
-          // 회원가입마저 에러가 난 경우 (예: 다른 원인의 서버 에러)
-          return false;
-        }
-      }
-      // 서버가 꺼져 있거나 타임아웃인 경우 등
-      return false;
     } catch (e) {
       return false;
     }
     return false;
+  }
+
+  /// 이메일/비밀번호 기반 회원가입
+  Future<bool> signup({
+    required String email,
+    required String password,
+    required String role,
+    required String jobCategory,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/api/v1/auth/signup',
+        data: {
+          'email': email,
+          'password': password,
+          'role': role,
+          'jobCategory': jobCategory,
+        },
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final token = response.data['token'] as String;
+        await AuthInterceptor.saveToken(token);
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+    return false;
+  }
+
+  /// 저장된 토큰이 있는지 검증하여 자동 로그인 처리
+  Future<bool> checkAutoLogin() async {
+    final token = await AuthInterceptor.getToken();
+    return token != null && token.isNotEmpty;
   }
 }
 

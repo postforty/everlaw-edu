@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/main/views/main_tab_screen.dart';
+import 'features/auth/views/login_screen.dart';
 import 'core/network/auth_provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/shared_preferences_provider.dart';
 import 'core/theme/app_theme.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await dotenv.load(fileName: ".env");
   
   final prefs = await SharedPreferences.getInstance();
   
@@ -64,17 +68,24 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     });
 
     // 백그라운드 로그인 동기화
-    await ref.read(authServiceProvider).authenticateDemoUser(DemoRole.learner);
+    final isLoggedIn = await ref.read(authServiceProvider).checkAutoLogin();
 
     // 2단계: 추가 대기 후 메인 화면 자동 이동
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
 
     // 스플래시 화면이므로 뒤로 가기 불가능하게 pushReplacement 사용
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainTabScreen()),
-    );
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainTabScreen()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
 

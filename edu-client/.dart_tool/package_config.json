@@ -206,6 +206,12 @@
       "languageVersion": "3.10"
     },
     {
+      "name": "flutter_dotenv",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_dotenv-6.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "flutter_lints",
       "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-3.0.2",
       "packageUri": "lib/",
@@ -420,6 +426,18 @@
       "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/mime-2.0.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
+    },
+    {
+      "name": "mockito",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/mockito-5.4.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "mocktail",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/mocktail-1.0.5",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
     },
     {
       "name": "objective_c",

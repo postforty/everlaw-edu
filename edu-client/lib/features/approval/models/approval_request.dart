@@ -2,6 +2,7 @@ class ApprovalRequest {
   final int id;
   final String title;
   final String lawReference;
+  final String lawReferenceBody;
   final String aiGeneratedMarkdown;
   final String validationDetails;
   final double hallucinationScore;
@@ -12,6 +13,7 @@ class ApprovalRequest {
     required this.id,
     required this.title,
     required this.lawReference,
+    required this.lawReferenceBody,
     required this.aiGeneratedMarkdown,
     required this.validationDetails,
     required this.hallucinationScore,
@@ -24,6 +26,7 @@ class ApprovalRequest {
       id: json['id'] as int,
       title: json['title'] as String? ?? 'N/A',
       lawReference: json['lawReference'] as String? ?? 'N/A',
+      lawReferenceBody: json['lawReferenceBody'] as String? ?? '법령 원문 내용이 제공되지 않았습니다.',
       aiGeneratedMarkdown: json['aiGeneratedMarkdown'] as String? ?? '',
       validationDetails: json['validationDetails'] as String? ?? '',
       hallucinationScore: (json['hallucinationScore'] as num? ?? 0.0).toDouble(),
@@ -39,6 +42,7 @@ class ApprovalRequest {
       'id': id,
       'title': title,
       'lawReference': lawReference,
+      'lawReferenceBody': lawReferenceBody,
       'aiGeneratedMarkdown': aiGeneratedMarkdown,
       'validationDetails': validationDetails,
       'hallucinationScore': hallucinationScore,
@@ -51,6 +55,7 @@ class ApprovalRequest {
     int? id,
     String? title,
     String? lawReference,
+    String? lawReferenceBody,
     String? aiGeneratedMarkdown,
     String? validationDetails,
     double? hallucinationScore,
@@ -61,6 +66,7 @@ class ApprovalRequest {
       id: id ?? this.id,
       title: title ?? this.title,
       lawReference: lawReference ?? this.lawReference,
+      lawReferenceBody: lawReferenceBody ?? this.lawReferenceBody,
       aiGeneratedMarkdown: aiGeneratedMarkdown ?? this.aiGeneratedMarkdown,
       validationDetails: validationDetails ?? this.validationDetails,
       hallucinationScore: hallucinationScore ?? this.hallucinationScore,

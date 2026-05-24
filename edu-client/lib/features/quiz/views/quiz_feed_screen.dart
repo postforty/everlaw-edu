@@ -82,72 +82,82 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final quizzes = ref.watch(quizBankProvider);
+    final quizzesAsync = ref.watch(quizBankProvider);
 
-    if (quizzes.isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text('출제된 문제가 없습니다.')),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('오늘의 모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Text(
-                '${_currentIndex + 1} / ${quizzes.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
-              ),
-            ),
-          )
-        ],
-      ),
-      body: PageView.builder(
-        controller: _pageController,
-        physics: _answeredMap[_currentIndex] == true
-            ? const BouncingScrollPhysics() // 오답 해설 감상 및 풀이 완료 시 드래그(스와이프) 다음 문제 유연 진입 허용
-            : const NeverScrollableScrollPhysics(), // 미풀이 상태에서는 강제 드래그 차단
-        onPageChanged: (idx) => setState(() => _currentIndex = idx),
-        itemCount: quizzes.length,
-        itemBuilder: (context, index) {
-          final quiz = quizzes[index];
-          return StandaloneQuizCard(
-            quiz: quiz,
-            onAnswerSelected: (isCorrect) => _onAnswerSelected(context, isCorrect, index, quizzes),
-            onChatbotRequested: () {
-              final contextMsg = "[오답 질문 문맥]\n- 문제: ${quiz.question}\n- 법적 근거: ${quiz.lawReference}\n- 상세 해설: ${quiz.explanation}\n\n위 내용과 관련하여 상세한 설명을 부탁드립니다.";
-              InlineChatbotSheet.show(context, quiz.lawReference, initialContext: contextMsg);
-            },
-            onNextPressed: () {
-              if (_currentIndex < quizzes.length - 1) {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeInOut,
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text('오늘의 모의고사를 모두 완료했습니다!'),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
+    return quizzesAsync.when(
+      data: (quizzes) {
+        if (quizzes.isEmpty) {
+          return const Scaffold(
+            body: Center(child: Text('출제된 문제가 없습니다.')),
           );
-        },
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('오늘의 모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Text(
+                    '${_currentIndex + 1} / ${quizzes.length}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
+                  ),
+                ),
+              )
+            ],
+          ),
+          body: PageView.builder(
+            controller: _pageController,
+            physics: _answeredMap[_currentIndex] == true
+                ? const BouncingScrollPhysics() // 오답 해설 감상 및 풀이 완료 시 드래그(스와이프) 다음 문제 유연 진입 허용
+                : const NeverScrollableScrollPhysics(), // 미풀이 상태에서는 강제 드래그 차단
+            onPageChanged: (idx) => setState(() => _currentIndex = idx),
+            itemCount: quizzes.length,
+            itemBuilder: (context, index) {
+              final quiz = quizzes[index];
+              return StandaloneQuizCard(
+                quiz: quiz,
+                onAnswerSelected: (isCorrect) => _onAnswerSelected(context, isCorrect, index, quizzes),
+                onChatbotRequested: () {
+                  final contextMsg = "[오답 질문 문맥]\n- 문제: ${quiz.question}\n- 법적 근거: ${quiz.lawReference}\n- 상세 해설: ${quiz.explanation}\n\n위 내용과 관련하여 상세한 설명을 부탁드립니다.";
+                  InlineChatbotSheet.show(context, quiz.lawReference, initialContext: contextMsg);
+                },
+                onNextPressed: () {
+                  if (_currentIndex < quizzes.length - 1) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text('오늘의 모의고사를 모두 완료했습니다!'),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Scaffold(
+        body: Center(child: Text('오류가 발생했습니다: $error')),
       ),
     );
   }

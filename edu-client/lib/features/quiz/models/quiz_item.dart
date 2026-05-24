@@ -14,4 +14,15 @@ class QuizItem {
     required this.explanation,
     required this.lawReference,
   });
+
+  factory QuizItem.fromJson(Map<String, dynamic> json) {
+    return QuizItem(
+      id: json['id'] as String,
+      question: json['question'] as String,
+      options: List<String>.from(json['options'] ?? []),
+      correctAnswer: json['correctAnswer'] as String,
+      explanation: json['explanation'] as String,
+      lawReference: json['lawReference'] as String,
+    );
+  }
 }

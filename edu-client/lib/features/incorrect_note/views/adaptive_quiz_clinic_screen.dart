@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/markdown_quiz_renderer.dart';
 import '../../../core/widgets/mastery_celebration_dialog.dart';
 import '../providers/incorrect_note_provider.dart';
+import '../providers/adaptive_quiz_provider.dart';
 
 class AdaptiveQuizClinicScreen extends ConsumerStatefulWidget {
   final String weakLawRef;
@@ -25,36 +26,33 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
   }
 
   Future<void> _simulateQuizGeneration() async {
-    // 2초 딜레이로 실시간 API 온더플라이 생성 시뮬레이션
-    await Future.delayed(const Duration(seconds: 2));
+    // 실제 API 연동
+    final markdown = await ref.read(adaptiveQuizServiceProvider).generateQuiz(widget.weakLawRef);
     if (!mounted) return;
+    
     setState(() {
       _isLoading = false;
-      _simulatedMarkdown = '''
-### AI 맞춤형 취약점 극복 훈련
-회원님의 취약 조항인 **${widget.weakLawRef}**에 대하여 완전히 새로운 실무 현장 시나리오의 변형 퀴즈가 생성되었습니다.
-
-### [QUIZ] ${widget.weakLawRef} 변형 훈련
-당신은 신축 건설 현장의 안전 관리자입니다. 고소작업(높이 3.5m)을 진행하던 중 작업자가 안전대를 걸지 않고 작업하는 것을 발견했습니다. 가장 올바른 즉각 조치는 무엇입니까?
-
-1. 작업이 끝날 때까지 기다렸다가 경고한다.
-2. 즉시 작업을 중지시키고 안전대 부착 설비에 안전대를 체결하도록 한 뒤 재개시킨다.
-3. 작업 속도를 위해 눈감아준다.
-4. 구두로만 조심하라고 외치고 지나간다.
-''';
+      if (markdown != null) {
+        _simulatedMarkdown = markdown;
+      } else {
+        _simulatedMarkdown = "오류가 발생했습니다. 문제를 생성할 수 없습니다.";
+      }
     });
   }
 
   void _handleSubmit(String answer, String confidence) async {
-    final isCorrect = answer.startsWith('2.');
+    final feedbackResponse = await ref.read(adaptiveQuizServiceProvider).submitQuiz(widget.weakLawRef, answer);
+    
+    if (!mounted) return;
+    
+    if (feedbackResponse == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('채점 서버와 통신할 수 없습니다.')));
+      return;
+    }
+
+    final isCorrect = feedbackResponse['isCorrect'] ?? false;
     setState(() {
-      _feedback = {
-        'isCorrect': isCorrect,
-        'feedback': isCorrect 
-            ? '정답입니다! 산업안전보건법에 따라 고소작업 시 추락방지 및 안전대 부착 체결은 필수 조치사항입니다.'
-            : '오답입니다. 고소작업 시 추락 위험이 매우 크므로 즉시 작업을 중단하고 안전대 체결 등 안전 조치를 선행해야 합니다.',
-        'metaCognitionStatus': isCorrect ? 'safe' : 'danger_unknown',
-      };
+      _feedback = feedbackResponse;
     });
 
     // 비동기로 연속 정답 저장 및 자동 졸업 체크
@@ -85,15 +83,14 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
           );
         } else {
           // 일반 정답 시 피드백 및 연속 정답 상태 안내
-          final currentCount = ref.read(incorrectNoteProvider.notifier).getConsecutiveCorrectCount(widget.weakLawRef);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
+              content: const Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
                   Expanded(
-                    child: Text('정답입니다! (현재 연속 정답: $currentCount회 / 3회 달성 시 자동 졸업)'),
+                    child: Text('정답입니다! (해당 조항에 대해 3회 연속 정답 달성 시 자동 졸업)'),
                   ),
                 ],
               ),
