@@ -82,7 +82,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'AI 엔진이 개정 법령 데이터를 감시 및 신규 교안을 생산하고 있습니다.',
+                    'AI 엔진이 개정 법령 데이터를 감시 및 신규 퀴즈를 생산하고 있습니다.',
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
                   ),
                 ],

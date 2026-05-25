@@ -7,7 +7,7 @@ class AdaptiveQuizService {
 
   AdaptiveQuizService(this._dio);
 
-  Future<String?> generateQuiz(String lawReference) async {
+  Future<Map<String, dynamic>?> generateQuiz(String lawReference) async {
     try {
       final response = await _dio.post(
         '/quizzes/adaptive',
@@ -15,7 +15,7 @@ class AdaptiveQuizService {
       );
 
       if (response.statusCode == 200) {
-        return response.data['markdown'] as String?;
+        return response.data['generation_result'] as Map<String, dynamic>?;
       }
     } catch (e) {
       return null;
@@ -23,13 +23,13 @@ class AdaptiveQuizService {
     return null;
   }
 
-  Future<Map<String, dynamic>?> submitQuiz(String lawReference, String answer) async {
+  Future<Map<String, dynamic>?> submitQuiz(String lawReference, bool isCorrect) async {
     try {
       final response = await _dio.post(
-        '/quizzes/submit',
+        '/progress/submit-adaptive-quiz',
         data: {
           'lawReference': lawReference,
-          'answer': answer,
+          'isCorrect': isCorrect,
         },
       );
 

@@ -25,10 +25,12 @@ public class ApprovalRequest extends BaseTimeEntity {
     // 신규 교안 생성의 경우 최종 승인 전까지 Lesson이 없으므로 Nullable 허용
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lesson_id", nullable = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Lesson lesson;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curriculum_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Curriculum curriculum;
 
     @Column(nullable = false, length = 200)

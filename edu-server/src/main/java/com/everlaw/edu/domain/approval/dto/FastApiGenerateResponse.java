@@ -20,20 +20,11 @@ public record FastApiGenerateResponse(
         String status
 ) {
     public record AnalysisResult(
-            @JsonProperty("lesson_id")
-            int lessonId,
-
             @JsonProperty("title")
             String title,
 
-            @JsonProperty("category")
-            String category,
-
             @JsonProperty("law_reference")
             String lawReference,
-
-            @JsonProperty("content_markdown")
-            String contentMarkdown,
 
             @JsonProperty("quiz_question")
             String quizQuestion,

@@ -47,15 +47,16 @@ public class ApprovalService {
      * WAS 리소스 절약을 위해 가상 스레드 환경에 최적화된 CompletableFuture 비동기 논블로킹 파이프라인으로 구성합니다.
      */
     public CompletableFuture<Void> triggerContentGeneration(GenerateTriggerRequest request) {
-        log.info("🚀 [Generation Trigger] Initiating AI content generation for Curriculum ID: {}", request.curriculumId());
+        log.info("🚀 [Generation Trigger] Initiating AI content generation for Law ID: {}", request.lawId());
         
-        // 1. 대상 커리큘럼 존재 유무 선검증 (없으면 데모용 임시 커리큘럼 자동 생성)
-        Curriculum curriculum = curriculumRepository.findById(request.curriculumId())
+        // 1. 대상 커리큘럼 존재 유무 선검증 (1 조항 = 1 커리큘럼 매핑: lawId를 커리큘럼 제목으로 사용하여 조회 또는 자동 생성)
+        String curriculumTitle = request.lawId();
+        Curriculum curriculum = curriculumRepository.findByTitle(curriculumTitle)
                 .orElseGet(() -> curriculumRepository.save(Curriculum.builder()
-                        .title("테스트 커리큘럼")
-                        .description("임시 테스트용 커리큘럼")
+                        .title(curriculumTitle)
+                        .description(curriculumTitle + " 전용 커리큘럼")
                         .category("안전보건")
-                        .targetJobCategory("제조업")
+                        .targetJobCategory("전직군")
                         .build()));
 
         FastApiLawChangeRequest fastApiRequest = new FastApiLawChangeRequest(request.lawId(), request.lawContent());
@@ -82,7 +83,7 @@ public class ApprovalService {
 
             } catch (Exception e) {
                 log.error("❌ [AI Ingestion Failed] Failed to process RAG generation workflow for Curriculum ID: {}", 
-                        request.curriculumId(), e);
+                        curriculum.getId(), e);
                 // 비즈니스 무중단 및 장애 전파 차단을 위해 예외를 던지지 않고 복구 흐름 처리
                 saveFallbackContent(curriculum, request, e);
             }
@@ -115,7 +116,7 @@ public class ApprovalService {
                 .curriculum(curriculum)
                 .title(analysis.title())
                 .lawReference(analysis.lawReference())
-                .aiGeneratedMarkdown(analysis.contentMarkdown())
+                .aiGeneratedMarkdown("") // 퀴즈 전용 모드로 전환 (교안 본문 제거)
                 .quizPayload(quizPayload)
                 .validationDetails(validation.validationDetails())
                 .hallucinationScore(validation.hallucinationScore())

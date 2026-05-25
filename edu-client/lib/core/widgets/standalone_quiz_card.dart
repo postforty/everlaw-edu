@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 
 class StandaloneQuizCard extends StatefulWidget {
   final QuizItem quiz;
-  final Function(bool isCorrect) onAnswerSelected;
+  final Function(bool isCorrect, int selectedIndex) onAnswerSelected;
   final VoidCallback onChatbotRequested;
   final VoidCallback? onNextPressed;
 
@@ -57,7 +57,8 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
       _isCorrect = option == widget.quiz.correctAnswer;
     });
 
-    widget.onAnswerSelected(_isCorrect!);
+    int selectedIndex = widget.quiz.options.indexOf(option);
+    widget.onAnswerSelected(_isCorrect!, selectedIndex);
   }
 
   @override

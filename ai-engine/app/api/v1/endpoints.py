@@ -23,6 +23,10 @@ class CurriculumSeedRequest(BaseModel):
 class CurriculumDeleteRequest(BaseModel):
     lesson_id: int
 
+class AdaptiveQuizRequest(BaseModel):
+    law_reference: str
+    previous_questions: list[str] = []
+
 @router.get("/status")
 async def status():
     return {
@@ -126,6 +130,16 @@ async def delete_curriculum(request: CurriculumDeleteRequest):
             "status": "Success",
             "message": f"Mock Curriculum Lesson '{request.lesson_id}' successfully cleaned up from vector store."
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/adaptive-quiz")
+async def adaptive_quiz(request: AdaptiveQuizRequest):
+    """지정된 법령을 기반으로 이전 문제들을 제외하고 즉석에서 새로운 변형 퀴즈를 출제합니다."""
+    try:
+        from app.services.adaptive_generator import generate_adaptive_quiz_async
+        result = await generate_adaptive_quiz_async(request.law_reference, request.previous_questions)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

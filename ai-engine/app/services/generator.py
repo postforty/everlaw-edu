@@ -8,14 +8,10 @@ from app.core.database import get_retriever, retrieve_affected_curriculum_async
 # Pydantic Structured Output Schema (Pivot to Content Factory)
 # =====================================================================
 
-class CurriculumGeneration(BaseModel):
-    lesson_id: int = Field(description="핫스왑할 대상 강의의 고유 식별자 ID")
-    curriculum_id: int = Field(description="핫스왑할 대상 커리큘럼의 고유 식별자 ID")
-    title: str = Field(description="최신 개정 법령 팩트를 기반으로 생산된 교육 강의안 제목")
-    category: str = Field(description="교육 카테고리 대분류 (예: 안전보건, 근로기준, 도로교통)")
-    law_reference: str = Field(description="RAG의 지식 소스가 된 최신 개정 법령 조항 고유 식별자 또는 조항명 (예: 산업안전보건법 제38조)")
-    content_markdown: str = Field(description="최신 법령 팩트를 지식 근거(Ground Truth)로 삼아, 가상 사고 시나리오 및 행동 요령 수칙 스토리텔링이 친근한 입말로 가미되어 기존 강의안 내용을 갱신한 최신화된 마크다운 강의 본문")
-    quiz_question: str = Field(description="갱신된 최신 법령 지식을 학습자가 완전히 숙지했는지 확인하기 위한 모의 평가 퀴즈의 스토리텔링형 질문 본문")
+class QuizGeneration(BaseModel):
+    title: str = Field(description="출제된 퀴즈의 핵심 주제 또는 법령 조항 (예: 산업안전보건법 제38조 비계 작업)")
+    law_reference: str = Field(description="RAG의 지식 소스가 된 최신 법령 조항 고유 식별자 또는 조항명 (예: 산업안전보건법 제38조)")
+    quiz_question: str = Field(description="법령 지식을 학습자가 완전히 숙지했는지 확인하기 위한 실무 현장 스토리텔링형 질문 본문")
     quiz_options: List[str] = Field(description="객관식 4지선다 보기 항목 4개 (문자열 배열)")
     quiz_answer_index: int = Field(description="정답 보기의 인덱스 (0부터 3 사이의 정수)")
     quiz_hint: str = Field(description="문제를 풀 때 도움이 되는 짧은 힌트")
@@ -23,17 +19,16 @@ class CurriculumGeneration(BaseModel):
 
 # LangGraph State Definition
 class AgentState(TypedDict):
-    question: str                  # 생산하고자 하는 교육 주제 또는 카테고리 (여기서는 개정 법령 텍스트)
-    context: List[str]             # law_documents에서 의미론적으로 검색된 최신 법령 전문 텍스트 목록 (Ground Truth)
-    affected_lesson: dict          # 매칭된 기존 마스터 챕터 강의안 정보 (lesson_id, curriculum_id, title, content)
-    generation_result: dict        # Gemini가 자율 생산한 구조화 JSON 데이터 (CurriculumGeneration)
+    question: str                  # 생산하고자 하는 교육 주제 또는 법령 텍스트
+    context: List[str]             # law_documents에서 의미론적으로 검색된 법령 전문 텍스트 목록 (Ground Truth)
+    generation_result: dict        # Gemini가 자율 생산한 구조화 JSON 데이터 (QuizGeneration)
     validation_result: dict        # 자가 사실 확인 감사 결과 데이터 (ContentValidation)
-    answer: str                    # 관리자 Side-by-Side 대조 화면용 최종 마크다운 리포트
+    answer: str                    # 관리자 대조 화면용 퀴즈 마크다운 리포트
 
 # Nodes
 async def retrieve(state: AgentState):
-    """지식 소스(law_documents)로부터 최신 법령 전문 팩트를 의미론적으로 검색하고 관련 커리큘럼 챕터를 찾아 매칭"""
-    print("---RETRIEVING GROUND TRUTH LAW AND MATCHING CURRICULUM---")
+    """지식 소스(law_documents)로부터 법령 전문 팩트를 의미론적으로 검색"""
+    print("---RETRIEVING GROUND TRUTH LAW---")
     question = state["question"]
     
     # 1. 최신 법령 전문 팩트 검색
@@ -41,102 +36,64 @@ async def retrieve(state: AgentState):
     documents = await retriever.ainvoke(question)
     context = [doc.page_content for doc in documents]
     
-    # RAG 검색 결과가 없으면 임시 fallback 탑재
+    # RAG 검색 결과가 없으면 원본 question 자체를 컨텍스트로 사용
     if not context:
-        context = ["높이 2미터(2m) 이상의 장소에서 작업을 진행하는 경우, 사업주는 근로자의 추락 위험을 방지하기 위하여 반드시 규격에 맞는 추락 방지 안전망을 촘촘히 의무적으로 설치해야 합니다. (산업안전보건법 제38조)"]
+        context = [question]
 
-    # 2. 개정 법령과 가장 연관이 깊은 기존 마스터 챕터 핫스왑 매칭
-    affected_lessons = await retrieve_affected_curriculum_async(question)
-    
-    if affected_lessons:
-        # 가장 유사도가 높은 최상위 매칭 강의 채택
-        affected_lesson = affected_lessons[0]
-        print(f"🎯 [MATCHED] 연관 마스터 챕터 매칭 성공! (ID: {affected_lesson['lesson_id']}, Title: {affected_lesson['title']})")
-    else:
-        # 매칭되는 강의가 전혀 없을 경우 고소 작업 챕터를 Fallback으로 지정
-        print("⚠️ [FALLBACK] 매칭되는 연관 마스터 챕터가 없어 디폴트 챕터 3(고소 작업)을 매칭합니다.")
-        affected_lesson = {
-            "lesson_id": 3,
-            "curriculum_id": 103,
-            "title": "고소 작업 및 비계 설치 안전 기준",
-            "content": """# 고소 작업 및 비계 설치 안전 기준
-높이 3미터(3m) 이상의 장소에서 작업을 진행하는 경우, 근로자의 추락 위험을 방지하기 위하여 반드시 규격에 맞는 추락 방지 안전망을 촘촘히 의무적으로 설치해야 합니다."""
-        }
-        
-    return {"context": context, "affected_lesson": affected_lesson}
+    return {"context": context}
 
 async def generate(state: AgentState):
-    """매칭된 기존 강의안 본문과 RAG 최신 법령 팩트를 융합하여 핫스왑 리라이팅 및 최신 개정 퀴즈 자동 재생산"""
-    print("---GENERATING HOT-SWAP CURRICULUM CONTENT---")
+    """법령 팩트를 융합하여 실무 현장 스토리텔링형 4지선다 모의 퀴즈 자동 재생산"""
+    print("---GENERATING QUIZ CONTENT---")
     question = state["question"]
     context = state.get("context", [])
-    affected_lesson = state.get("affected_lesson", {})
     
     law_context_str = "\n\n".join(context)
-    structured_llm = llm.with_structured_output(CurriculumGeneration)
+    structured_llm = llm.with_structured_output(QuizGeneration)
     
     template = """당신은 법률 및 기업 컴플라이언스 교육 전문 AI 에이전트입니다.
-    기존에 시딩되어 서비스 중인 [기존 마스터 강의안]의 내용 중, RAG로 검색된 [최신 개정 법령 (Ground Truth)]과 비교하여 변경/개정된 사항이 있다면 이를 정밀하게 반영하여 실시간 핫스왑(Hot-Swap) 리라이팅(Rewriting)을 수행해야 합니다.
+    제공된 [법령 팩트 (Ground Truth)]만을 근거로 하여, 임직원들이 해당 법령을 완벽하게 숙지할 수 있도록 실무 현장 사례를 바탕으로 한 4지선다형 퀴즈를 1문항 출제해야 합니다.
     
-    [최신 개정 법령 (Ground Truth)]
+    [법령 팩트 (Ground Truth)]
     {law_context}
     
-    [기존 마스터 강의안 정보]
-    - Lesson ID: {lesson_id}
-    - Curriculum ID: {curriculum_id}
-    - 기존 강의 제목: {old_title}
-    - 기존 강의 본문: 
-    {old_content}
-    
-    [콘텐츠 핫스왑 리라이팅 가이드라인]
-    1. **정밀 리라이팅**: RAG 개정 법령 팩트와 비교하여 기존 강의안의 잘못되었거나 구시대적인 규제 수치(예: '3미터(3m)'에서 '2미터(2m)'로의 변경)가 있다면, 이를 최신 법정 기준으로 확실하게 수정하십시오. 
-    2. **문맥 일관성**: 개정된 부분 외의 유용한 설명이나 기본적인 맥락은 유지하되, 전체 강의가 매끄러운 마크다운 본문으로 흐르도록 자연스러운 문체로 보완하십시오.
-    3. **정확한 메타데이터 매핑**: 반드시 주어진 핫스왑 대상 강의의 Lesson ID({lesson_id})와 Curriculum ID({curriculum_id})를 스키마의 출력 값으로 정확히 매핑하여 전달해 주어야 합니다.
-    4. **개정 반영 신규 퀴즈 출제**: 개정된 수치나 강화된 의무 사항을 확실하게 저격하는 4지선다형 객관식 모의 퀴즈 1문항을 출제하되, 질문(quiz_question), 보기 4개(quiz_options), 정답 인덱스(quiz_answer_index, 0~3), 힌트(quiz_hint), 해설(quiz_explanation)로 나누어 엄격하게 구조화된 JSON 데이터로 출력하십시오. 정답은 반드시 최신 개정 법령 기준에 의거해야 합니다.
+    [퀴즈 출제 가이드라인]
+    1. **현장 스토리텔링 지문**: 딱딱한 법령 조문을 가상의 현장 사례 및 인물(예: 김 대리, 박 소장 등)의 사건을 다룬 스토리텔링형 지문으로 구성하십시오.
+    2. **명확한 정답과 매력적인 오답**: 4개의 객관식 보기 중 정답은 오직 1개이며, 나머지 3개는 법령을 헷갈리기 쉽게 만드는 매력적인 오답으로 구성하십시오.
+    3. **친절한 힌트와 상세한 해설**: 학습자가 생각하도록 유도하는 힌트와, 정답 및 오답의 이유를 법적 근거에 기반하여 상세히 설명하는 해설을 작성하십시오.
+    4. **구조화된 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 JSON 데이터로 출력하십시오.
     """
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", template),
-        ("human", "위 가이드라인에 따라 기존 강의 ID {lesson_id}의 마스터 강의안을 최신 개정 법령 팩트에 근거하여 실시간 핫스왑(Hot-Swap) 리라이팅을 수행하고 신규 퀴즈를 출제하여 CurriculumGeneration 구조로 출력해주세요.")
+        ("human", "위 가이드라인에 따라 제공된 법령 팩트에 근거하여 실무 스토리텔링형 4지선다 퀴즈를 출제해주세요.")
     ])
     chain = prompt | structured_llm
     
     try:
-        result: CurriculumGeneration = await chain.ainvoke({
-            "law_context": law_context_str,
-            "lesson_id": affected_lesson.get("lesson_id", 3),
-            "curriculum_id": affected_lesson.get("curriculum_id", 103),
-            "old_title": affected_lesson.get("title", ""),
-            "old_content": affected_lesson.get("content", "")
+        result: QuizGeneration = await chain.ainvoke({
+            "law_context": law_context_str
         })
         result_dict = result.dict()
     except Exception as e:
         print(f"Content Generation Structured Output Failed: {e}")
-        fallback = CurriculumGeneration(
-            lesson_id=affected_lesson.get("lesson_id", 3),
-            curriculum_id=affected_lesson.get("curriculum_id", 103),
-            title=affected_lesson.get("title", "고소 작업 및 비계 설치 안전 기준"),
-            category="안전보건",
-            law_reference="산업안전보건법 제38조",
-            content_markdown=f"# {affected_lesson.get('title', '고소 작업 및 비계 설치 안전 기준')}\n\n## 1. 개요\n본 강의에서는 고소 작업 시 발생할 수 있는 추락 사고 예방 조치를 학습합니다.\n\n## 2. 비계 설치 기준\n* 높이 2미터(2m) 이상의 장소에서 작업을 진행하는 경우, 근로자의 추락 위험을 방지하기 위하여 반드시 규격에 맞는 추락 방지 안전망을 촘촘히 의무적으로 설치해야 합니다. (기존 3m에서 2m로 개정)",
-            quiz_question="개정된 산업안전보건법에 따라, 제조업 비계 작업 시 근로자 추락 방지망을 의무적으로 설치해야 하는 작업 장소의 최소 높이 기준은 무엇입니까?",
-            quiz_options=["1미터(1m) 이상", "2미터(2m) 이상", "3미터(3m) 이상", "5미터(5m) 이상"],
+        fallback = QuizGeneration(
+            title="법령 기반 컴플라이언스 퀴즈",
+            law_reference="제공된 법령 데이터",
+            quiz_question="다음 중 제공된 법령 규정에 따른 올바른 조치는 무엇입니까?",
+            quiz_options=["관련 법령을 준수하지 않는다.", "법령에 규정된 의무 사항을 준수한다.", "임의로 안전 조치를 생략한다.", "비용 절감을 위해 필수 규정을 무시한다."],
             quiz_answer_index=1,
-            quiz_hint="최근 법령이 개정되어 기존 3미터보다 기준이 강화(낮아짐)되었습니다.",
-            quiz_explanation="산업안전보건법 제38조 개정에 따라 고소 작업 현장의 안전 기준이 강화되었습니다. 기존 '3미터(3m) 이상'이었던 추락 방지망 의무 설치 기준이 '2미터(2m) 이상'으로 변경되었습니다."
+            quiz_hint="모든 임직원은 법령에 규정된 사항을 최우선으로 준수해야 합니다.",
+            quiz_explanation="컴플라이언스의 핵심은 규정된 법적 의무를 철저히 지키는 것입니다."
         )
         result_dict = fallback.dict()
         result = fallback
         
-    # 관리자 화면용 마크다운 리포트 생성 (Side-by-Side 대조 화면용 구성)
-    report = f"## ⚖️ [AI 실시간 핫스왑] 마스터 커리큘럼 갱신 제안서\n\n"
-    report += f"**핫스왑 대상 강의 ID**: {result.lesson_id} (Curriculum ID: {result.curriculum_id})\n"
-    report += f"**갱신된 강의 제목**: {result.title}\n"
-    report += f"**대분류 카테고리**: {result.category}\n"
-    report += f"**RAG 근거 법령**: {result.law_reference}\n\n"
-    report += f"### 📝 AI 리라이팅 완료된 강의 본문 (Markdown)\n\n"
-    report += f"{result.content_markdown}\n\n"
-    report += f"### 📝 최신 개정 반영 신규 퀴즈 제안\n\n"
+    # 관리자 화면용 마크다운 퀴즈 리포트 생성
+    report = f"## ⚖️ 신규 문제 은행 퀴즈 제안서\n\n"
+    report += f"**퀴즈 주제**: {result.title}\n"
+    report += f"**근거 법령**: {result.law_reference}\n\n"
+    report += f"### 📝 문제\n\n"
     report += f"**Q. {result.quiz_question}**\n\n"
     for idx, opt in enumerate(result.quiz_options):
         report += f"{idx + 1}) {opt}\n"

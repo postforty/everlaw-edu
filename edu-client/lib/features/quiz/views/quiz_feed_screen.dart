@@ -20,7 +20,7 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
   int _currentIndex = 0;
   final Map<int, bool> _answeredMap = {};
 
-  void _onAnswerSelected(BuildContext context, bool isCorrect, int index, var quizList) {
+  void _onAnswerSelected(BuildContext context, bool isCorrect, int selectedIndex, int index, var quizList) {
     final quiz = quizList[index];
 
     setState(() {
@@ -34,7 +34,7 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
 
         // 마스터리 체크 연동
         final achievedMastery = await ref.read(incorrectNoteProvider.notifier)
-            .registerQuizResult(quiz.lawReference, true);
+            .submitQuizResult(int.parse(quiz.id), selectedIndex);
 
         if (achievedMastery && context.mounted) {
           MasteryCelebrationDialog.show(context, quiz.lawReference);
@@ -64,14 +64,14 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
       });
     } else {
       // 오답 시 오답노트에 즉시 저장
-      ref.read(incorrectNoteProvider.notifier).registerQuizResult(quiz.lawReference, false);
+      ref.read(incorrectNoteProvider.notifier).submitQuizResult(int.parse(quiz.id), selectedIndex);
       final note = IncorrectNote(
         id: const Uuid().v4(),
         quizId: quiz.id,
         question: quiz.question,
         options: quiz.options,
         answerIndex: quiz.options.indexWhere((o) => o == quiz.correctAnswer),
-        selectedIndex: -1, // 추후 StandaloneQuizCard에서 선택된 인덱스 반환 시 연동 가능
+        selectedIndex: selectedIndex, 
         explanation: quiz.explanation,
         lawReference: quiz.lawReference,
         incorrectAt: DateTime.now().toIso8601String(),
@@ -120,7 +120,7 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
               final quiz = quizzes[index];
               return StandaloneQuizCard(
                 quiz: quiz,
-                onAnswerSelected: (isCorrect) => _onAnswerSelected(context, isCorrect, index, quizzes),
+                onAnswerSelected: (isCorrect, selectedIndex) => _onAnswerSelected(context, isCorrect, selectedIndex, index, quizzes),
                 onChatbotRequested: () {
                   final contextMsg = "[오답 질문 문맥]\n- 문제: ${quiz.question}\n- 법적 근거: ${quiz.lawReference}\n- 상세 해설: ${quiz.explanation}\n\n위 내용과 관련하여 상세한 설명을 부탁드립니다.";
                   InlineChatbotSheet.show(context, quiz.lawReference, initialContext: contextMsg);

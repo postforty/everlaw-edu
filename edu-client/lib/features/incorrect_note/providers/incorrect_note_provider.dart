@@ -50,24 +50,28 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   }
 
   /// returns true if mastery achieved (consecutive reached 3)
-  Future<bool> registerQuizResult(String lawReference, bool isCorrect) async {
+  Future<bool> submitQuizResult(int quizId, int selectedIndex) async {
     try {
       final response = await _dio.post(
-        '/progress/quiz-result',
+        '/progress/submit-quiz',
         data: {
-          'lawReference': lawReference,
-          'isCorrect': isCorrect,
+          'quizId': quizId,
+          'selectedIndex': selectedIndex,
         },
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
-        final masteryAchieved = data['masteryAchieved'] ?? false;
+        final isGraduated = data['isGraduated'] ?? false;
         
-        if (masteryAchieved) {
-          await archiveByLawReference(lawReference);
+        if (isGraduated) {
+          // You might need the lawReference to archive it locally, 
+          // but for now we can just reload notes from the server.
+          await loadNotes();
+        } else if (data['isCorrect'] == false) {
+           await loadNotes(); // Reload notes if they got it wrong so it adds to list
         }
-        return masteryAchieved;
+        return isGraduated;
       }
     } catch (e) {
       return false;

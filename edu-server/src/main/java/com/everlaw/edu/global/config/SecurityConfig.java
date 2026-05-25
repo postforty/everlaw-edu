@@ -64,8 +64,8 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // 데모 개발 편의를 위해 최신 레슨 및 결재 요청 목록을 전체 공개 허용
-                        .requestMatchers("/api/v1/lessons/**").permitAll()
-                        .requestMatchers("/api/v1/approvals/**").permitAll()
+                        .requestMatchers("/api/v1/lessons/**", "/api/v1/lessons").permitAll()
+                        .requestMatchers("/api/v1/approvals/**", "/api/v1/approvals").permitAll()
                         // 그 외 모든 요청은 토큰 기반 인증 필수
                         .anyRequest().authenticated()
                 )

@@ -27,7 +27,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '교안 컴플라이언스 정밀 검토 및 대조 뷰어',
+          '신규 퀴즈 컴플라이언스 정밀 검토',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
@@ -82,7 +82,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'AI 엔진 RAG가 법률 전문 DB에서 실시간 청킹 및 연계 추적한 원천 법규 정보입니다. 이 데이터의 의도와 수치가 최종 교안에 100% 무왜곡 반영되어야 합니다.',
+                  'AI 엔진 RAG가 법률 전문 DB에서 실시간 청킹 및 연계 추적한 원천 법규 정보입니다. 이 데이터의 의도와 수치가 최종 퀴즈 문제에 100% 무왜곡 반영되어야 합니다.',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 20),
@@ -157,7 +157,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'AI 생산 강의안 및 모의 평가 프리뷰',
+                            'AI 생산 모의 퀴즈 프리뷰',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -262,7 +262,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '생산 교안 본문 및 퀴즈',
+                    '생산된 신규 퀴즈 프리뷰',
                     style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -308,7 +308,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                 onPressed: isLoading ? null : () => _handleDecision(context, false),
                 icon: const Icon(Icons.close_rounded, color: Colors.red),
                 label: const Text(
-                  '교안 반려',
+                  '퀴즈 반려',
                   style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -374,8 +374,8 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                 Expanded(
                   child: Text(
                     approved 
-                        ? '해당 교안이 최종 승인되었습니다. 학습자용 배포 및 푸시 알림이 발송되었습니다.' 
-                        : '교안 검토가 반려 처리되었습니다.',
+                        ? '해당 신규 퀴즈가 최종 승인되었습니다. 문제 은행에 배포되었습니다.' 
+                        : '퀴즈 검토가 반려 처리되었습니다.',
                   ),
                 ),
               ],

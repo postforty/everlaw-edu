@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/markdown_quiz_renderer.dart';
+import '../../../core/widgets/standalone_quiz_card.dart';
 import '../../../core/widgets/mastery_celebration_dialog.dart';
+import '../../quiz/models/quiz_item.dart';
 import '../providers/incorrect_note_provider.dart';
 import '../providers/adaptive_quiz_provider.dart';
 
@@ -16,7 +17,7 @@ class AdaptiveQuizClinicScreen extends ConsumerStatefulWidget {
 
 class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScreen> {
   bool _isLoading = true;
-  String _simulatedMarkdown = "";
+  QuizItem? _simulatedQuiz;
   Map<String, dynamic>? _feedback;
 
   @override
@@ -27,21 +28,26 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
 
   Future<void> _simulateQuizGeneration() async {
     // 실제 API 연동
-    final markdown = await ref.read(adaptiveQuizServiceProvider).generateQuiz(widget.weakLawRef);
+    final quizPayload = await ref.read(adaptiveQuizServiceProvider).generateQuiz(widget.weakLawRef);
     if (!mounted) return;
     
     setState(() {
       _isLoading = false;
-      if (markdown != null) {
-        _simulatedMarkdown = markdown;
-      } else {
-        _simulatedMarkdown = "오류가 발생했습니다. 문제를 생성할 수 없습니다.";
+      if (quizPayload != null) {
+        _simulatedQuiz = QuizItem(
+          id: 'adaptive_temp',
+          question: quizPayload['quiz_question'] ?? '',
+          options: List<String>.from(quizPayload['quiz_options'] ?? []),
+          correctAnswer: quizPayload['quiz_options']?[quizPayload['quiz_answer_index'] ?? 0] ?? '',
+          explanation: quizPayload['quiz_explanation'] ?? '',
+          lawReference: quizPayload['law_reference'] ?? widget.weakLawRef,
+        );
       }
     });
   }
 
-  void _handleSubmit(String answer, String confidence) async {
-    final feedbackResponse = await ref.read(adaptiveQuizServiceProvider).submitQuiz(widget.weakLawRef, answer);
+  void _handleAnswerSelected(bool isCorrect, int selectedIndex) async {
+    final feedbackResponse = await ref.read(adaptiveQuizServiceProvider).submitQuiz(widget.weakLawRef, isCorrect);
     
     if (!mounted) return;
     
@@ -50,14 +56,14 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
       return;
     }
 
-    final isCorrect = feedbackResponse['isCorrect'] ?? false;
     setState(() {
       _feedback = feedbackResponse;
     });
 
     // 비동기로 연속 정답 저장 및 자동 졸업 체크
-    final achievedMastery = await ref.read(incorrectNoteProvider.notifier)
-        .registerQuizResult(widget.weakLawRef, isCorrect);
+    // AdaptiveQuizService의 submitQuiz에서 이미 처리하므로 상태 갱신만 필요하면 수행
+    // final achievedMastery = feedbackResponse['isGraduated'] ?? false;
+    final achievedMastery = feedbackResponse['isGraduated'] ?? false;
 
     if (isCorrect) {
       // 맞췄을 경우 취약 지수 극복 피드백 제공
@@ -129,11 +135,18 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
                 ],
               ),
             )
-          : MarkdownQuizRenderer(
-              rawMarkdown: _simulatedMarkdown,
-              quizFeedback: _feedback,
-              onQuizSubmit: _handleSubmit,
-            ),
+          : _simulatedQuiz != null
+              ? StandaloneQuizCard(
+                  quiz: _simulatedQuiz!,
+                  onAnswerSelected: _handleAnswerSelected,
+                  onChatbotRequested: () {
+                    // Chatbot sheet can be opened here
+                  },
+                  onNextPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              : const Center(child: Text("문제 생성 실패")),
     );
   }
 }

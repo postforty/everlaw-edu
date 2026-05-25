@@ -33,25 +33,22 @@ async def validate(state: AgentState):
     structured_llm = llm.with_structured_output(ContentValidation)
     
     template = """당신은 법률 컴플라이언스 전문 감사(Audit) AI 에이전트입니다.
-    RAG에서 추출한 [원본 법령 원천 데이터]와 AI가 무에서 유로 새롭게 창작한 [생산된 교육 본문]을 철저히 교차 대조하여 사실 관계 확인(Fact-checking)을 수행하십시오.
+    RAG에서 추출한 [원본 법령 원천 데이터]와 AI가 무에서 유로 새롭게 창작한 [생산된 퀴즈]를 철저히 교차 대조하여 사실 관계 확인(Fact-checking)을 수행하십시오.
     
     [원본 법령 원천 데이터 (Ground Truth)]
     {original_law}
     
-    [생산된 교육 본문]
+    [생산된 퀴즈]
     강의 제목: {title}
     근거 참조 조항: {law_reference}
-    생산 본문 마크다운: 
-    {content_markdown}
-    
     생산 퀴즈:
     {quiz_proposed}
     
     다음 감사 기준에 따라 분석하여 결과를 정형 형태로 반환하십시오:
-    1. 생산된 마크다운 내용에 기술된 중요 규제 수치(예: 높이 2m, 과태료 벌금 수치 등)가 원본 법령의 수치와 단 1%의 오차도 없이 완벽하게 일치하는가? (숫자 불일치는 치명적 환각입니다)
-    2. 생산된 콘텐츠가 원본 법령의 의무 의도를 왜곡하거나, 임의로 지어낸 허위 조항(환각)을 포함하고 있지는 않은가?
+    1. 퀴즈의 지문, 힌트, 정답, 해설에 기술된 중요 규제 수치(예: 높이 2m, 과태료 벌금 수치 등)가 원본 법령의 수치와 단 1%의 오차도 없이 완벽하게 일치하는가? (숫자 불일치는 치명적 환각입니다)
+    2. 생성된 퀴즈가 원본 법령의 의무 의도를 왜곡하거나, 임의로 지어낸 허위 사실(환각)을 포함하고 있지는 않은가?
     3. 환각 의심 지수(Hallucination Score)를 0.0~1.0 사이로 계산하십시오 (환각이 없을수록 0.0에 수렴함).
-    4. 법령의 핵심 수치(숫자, 기한)가 원본과 불일치하여 즉시 관리자 경고(Red Flag)를 띄워야 하는지 여부
+    4. 퀴즈의 핵심 수치(숫자, 기한)가 원본과 불일치하여 즉시 관리자 경고(Red Flag)를 띄워야 하는지 여부
     """
     
     prompt = ChatPromptTemplate.from_template(template)
@@ -62,7 +59,6 @@ async def validate(state: AgentState):
             "original_law": law_context_str,
             "title": gen_result.get("title", "N/A"),
             "law_reference": gen_result.get("law_reference", "N/A"),
-            "content_markdown": gen_result.get("content_markdown", "N/A"),
             "quiz_proposed": gen_result.get("quiz_proposed", "N/A")
         })
         val_dict = val_res.dict()
