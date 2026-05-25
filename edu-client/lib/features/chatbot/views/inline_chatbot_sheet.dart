@@ -42,7 +42,12 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
     super.initState();
     if (widget.initialContext != null && widget.initialContext!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleSend(widget.initialContext!);
+        // 바텀시트가 열리는 애니메이션이 끝난 후 메시지가 추가되도록 딜레이 부여
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            _handleSend(widget.initialContext!);
+          }
+        });
       });
     }
   }
@@ -219,6 +224,30 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
                                   .replaceAllMapped(RegExp(r'\*\*(.*?)(\s*)\(([^\)]+)\)\*\*', dotAll: true), (m) => '**${m.group(1)}**${m.group(2)}(${m.group(3)})');
                             }
                             
+                            if (!isUser && displayText.contains('교차 확인하고 있습니다')) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Flexible(
+                                    child: Text(
+                                      displayText,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 14.0,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
                             return isUser 
                                 ? Text(
                                     displayText,
