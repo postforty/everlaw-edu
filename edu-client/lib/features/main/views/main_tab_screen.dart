@@ -1,33 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../quiz/views/quiz_feed_screen.dart';
 import 'dart:ui';
 import '../../incorrect_note/views/incorrect_note_screen.dart';
+import '../../approval/views/approval_queue_screen.dart';
+import '../../../core/network/auth_provider.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/theme/app_theme.dart';
 
-class MainTabScreen extends StatefulWidget {
+class MainTabScreen extends ConsumerStatefulWidget {
   const MainTabScreen({super.key});
 
   @override
-  State<MainTabScreen> createState() => _MainTabScreenState();
+  ConsumerState<MainTabScreen> createState() => _MainTabScreenState();
 }
 
-class _MainTabScreenState extends State<MainTabScreen> {
+class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   int _currentIndex = 0;
-  final List<Widget> _screens = [
-    const QuizFeedScreen(),
-    const IncorrectNoteScreen(),
-  ];
+  List<Widget> _getScreens(bool isAdmin) {
+    if (isAdmin) {
+      return [
+        const QuizFeedScreen(),
+        const IncorrectNoteScreen(),
+        const ApprovalQueueScreen(),
+      ];
+    }
+    return [
+      const QuizFeedScreen(),
+      const IncorrectNoteScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final role = ref.watch(authServiceProvider).currentUserRole;
+    final isAdmin = role == 'ADMIN';
+    final screens = _getScreens(isAdmin);
+
     final scaffold = Scaffold(
       extendBody: true, // Required for floating glassmorphism
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
-      bottomNavigationBar: _buildFloatingNavBar(context),
+      bottomNavigationBar: _buildFloatingNavBar(context, isAdmin),
     );
 
     return ResponsiveLayout(
@@ -46,7 +62,27 @@ class _MainTabScreenState extends State<MainTabScreen> {
     );
   }
 
-  Widget _buildFloatingNavBar(BuildContext context) {
+  Widget _buildFloatingNavBar(BuildContext context, bool isAdmin) {
+    final items = [
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.psychology_rounded),
+        label: '피드',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.menu_book_rounded),
+        label: '오답 노트',
+      ),
+    ];
+
+    if (isAdmin) {
+      items.add(
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.admin_panel_settings_rounded),
+          label: '승인 대기열',
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
       decoration: BoxDecoration(
@@ -67,16 +103,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
             elevation: 0,
             showSelectedLabels: true,
             showUnselectedLabels: false,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.psychology_rounded),
-                label: '피드',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.menu_book_rounded),
-                label: '오답 노트',
-              ),
-            ],
+            items: items,
           ),
         ),
       ),

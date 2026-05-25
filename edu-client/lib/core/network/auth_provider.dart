@@ -10,6 +10,8 @@ enum DemoRole {
 
 class AuthService {
   final Dio _dio;
+  String? currentUserRole;
+  String? currentUserEmail;
 
   AuthService(this._dio);
 
@@ -26,7 +28,12 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final token = response.data['token'] as String;
+        final role = response.data['role'] as String;
+        final emailStr = response.data['email'] as String;
         await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRole(role);
+        currentUserRole = role;
+        currentUserEmail = emailStr;
         return true;
       }
     } catch (e) {
@@ -55,7 +62,12 @@ class AuthService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final token = response.data['token'] as String;
+        final userRole = response.data['role'] as String;
+        final emailStr = response.data['email'] as String;
         await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRole(userRole);
+        currentUserRole = userRole;
+        currentUserEmail = emailStr;
         return true;
       }
     } catch (e) {
@@ -67,7 +79,11 @@ class AuthService {
   /// 저장된 토큰이 있는지 검증하여 자동 로그인 처리
   Future<bool> checkAutoLogin() async {
     final token = await AuthInterceptor.getToken();
-    return token != null && token.isNotEmpty;
+    if (token != null && token.isNotEmpty) {
+      currentUserRole = await AuthInterceptor.getRole();
+      return true;
+    }
+    return false;
   }
 }
 

@@ -24,6 +24,23 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
+  /// 사용자 역할 읽기
+  static Future<String?> getRole() async {
+    if (kIsWeb) {
+      return _webStorage['user_role'];
+    }
+    return await _secureStorage.read(key: 'user_role');
+  }
+
+  /// 사용자 역할 쓰기
+  static Future<void> saveRole(String role) async {
+    if (kIsWeb) {
+      _webStorage['user_role'] = role;
+    } else {
+      await _secureStorage.write(key: 'user_role', value: role);
+    }
+  }
+
   /// 보안 토큰 파기
   static Future<void> deleteToken() async {
     if (kIsWeb) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/approval_request.dart';
 import '../providers/approval_provider.dart';
 import 'approval_detail_screen.dart';
+import '../../../core/network/dio_provider.dart';
 
 class ApprovalQueueScreen extends ConsumerWidget {
   const ApprovalQueueScreen({super.key});
@@ -11,6 +12,7 @@ class ApprovalQueueScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final queueAsync = ref.watch(approvalQueueProvider);
     final theme = Theme.of(context);
+    final dio = ref.watch(dioProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,6 +33,32 @@ class ApprovalQueueScreen extends ConsumerWidget {
         ],
       ),
       backgroundColor: Colors.grey.shade50,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90.0),
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            try {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('AI 엔진에 퀴즈 생성을 요청했습니다... (잠시 후 새로고침 해주세요)')),
+              );
+              await dio.post(
+                '/approvals/generate',
+                data: {
+                  'curriculumId': 1, // 테스트용 ID
+                  'lawId': '산업안전보건법 제38조',
+                  'lawContent': '사업주는 근로자가 추락할 위험이 있는 장소, 토사·구축물 등이 붕괴할 우려가 있는 장소 등에서 작업할 때에 추락 방지망을 설치해야 한다.',
+                },
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('생성 요청 실패: $e')),
+              );
+            }
+          },
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('수동 생성 트리거'),
+        ),
+      ),
       body: queueAsync.when(
         data: (requests) {
           if (requests.isEmpty) {

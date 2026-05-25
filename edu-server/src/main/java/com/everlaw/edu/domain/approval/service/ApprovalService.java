@@ -49,9 +49,14 @@ public class ApprovalService {
     public CompletableFuture<Void> triggerContentGeneration(GenerateTriggerRequest request) {
         log.info("🚀 [Generation Trigger] Initiating AI content generation for Curriculum ID: {}", request.curriculumId());
         
-        // 1. 대상 커리큘럼 존재 유무 선검증
+        // 1. 대상 커리큘럼 존재 유무 선검증 (없으면 데모용 임시 커리큘럼 자동 생성)
         Curriculum curriculum = curriculumRepository.findById(request.curriculumId())
-                .orElseThrow(() -> new EntityNotFoundException("Curriculum not found with ID: " + request.curriculumId()));
+                .orElseGet(() -> curriculumRepository.save(Curriculum.builder()
+                        .title("테스트 커리큘럼")
+                        .description("임시 테스트용 커리큘럼")
+                        .category("안전보건")
+                        .targetJobCategory("제조업")
+                        .build()));
 
         FastApiLawChangeRequest fastApiRequest = new FastApiLawChangeRequest(request.lawId(), request.lawContent());
 
