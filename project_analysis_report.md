@@ -59,9 +59,9 @@ graph TD
 *   **문제점**: 매번 법령 파일이 갱신될 때마다 전체 청크의 임베딩을 다시 생성하고 DB를 갱신하면, 막대한 API 호출 비용과 DB 부하가 발생합니다.
 *   **해결책**: 각 청크 본문의 `SHA-256` 해시를 추출하여 `cmetadata.chunk_hash` 필드에 함께 저장합니다. 적재 요청 시 데이터베이스의 이전 해시값과 대조하여 완벽하게 일치할 경우 **임베딩 생성 API 호출과 DB Write 트랜잭션 전체를 고속으로 SKIP** 처리하여 자원과 비용을 극적으로 절감합니다. (99%의 무변경 데이터가 SKIP 처리됨)
 
-### 3.4 물리적 멱등성 클렌징 (DELETE & INSERT)
-*   **문제점**: LangChain PGVector의 PK 제약 조건 한계로 인해 데이터 갱신 시 중복 레코드가 계속 쌓이거나 쓰레기 데이터로 인해 환각이 증폭될 수 있습니다.
-*   **해결책**: 불변의 고유 비즈니스 키(`law_{law_name}_{article}`)를 정의하고, 해시 변경 감지 시 또는 재시딩 구동 시 데이터베이스에서 **구버전 레코드를 물리적 SQL-level로 완전히 DELETE(선삭제)한 후 INSERT(후삽입)** 함으로써 100%의 멱등성과 클린한 DB 상태를 영구 보증합니다.
+### 3.4 물리적 멱등성 클렌징 및 PK 충돌 방지 (DELETE & INSERT)
+*   **문제점**: LangChain PGVector의 PK 제약 조건 한계로 인해 데이터 갱신 시 중복 레코드가 계속 쌓이거나 쓰레기 데이터로 인해 환각이 증폭될 수 있습니다. 특히 `산업안전보건법 제1조`와 `시행규칙 부칙 제1조`가 동일한 PK를 생성하여 덮어쓰기(Data Loss)가 발생하는 치명적 버그가 존재했습니다.
+*   **해결책**: 불변의 고유 비즈니스 키(`law_{law_name}_{law_type}_{article}`)를 정교하게 정의하고 부칙 여부까지 포함시켜 식별자 충돌을 원천 방어했습니다. 해시 변경 감지 시 구버전 레코드를 물리적 SQL-level로 완전히 DELETE(선삭제)한 후 INSERT(후삽입)함으로써 100%의 멱등성과 클린한 DB 상태를 영구 보증합니다.
 
 ### 3.5 비조항 청크 붕괴 예방
 *   **해결책**: `article` 정보가 추출되지 않는 최상위 헤더나 예외 조항(정의, 부칙 등)에 대해서도 `seed_{law_name}_{law_type}_{chunk_idx}`와 같은 **결정론적 대체 키(`law_id`)**를 생성하여 실시간 스캔과 시딩 간의 키 충돌과 누실을 완벽히 방어합니다.
@@ -89,10 +89,10 @@ graph TD
 
 | 컴포넌트 | 현재 개발 완료된 핵심 사양 및 상태 | 상태 |
 | :--- | :--- | :---: |
-| **AI Engine (FastAPI)** | - 조 단위 청킹 파이프라인 및 정밀 주소 Regex 파서 장착 완료<br>- 스마트 해시 CDC 스킵 및 물리 선삭제 멱등성 Upsert 구현 완료<br>- LangGraph RAG 자율 생산 및 자가 검증 감사 체인 완성 | **완료 (로컬 E2E 테스트 성료)** |
-| **Back-end (Spring Boot)**| - JPA 핵심 도메인 모델(`Member`, `Curriculum`, `Lesson`, `ApprovalRequest`, `ContentSnapshot`) 구축 및 매핑 완료<br>- AI Engine 콘텐츠 생성 연동 웹훅(Webhook) 및 릴리스 배포 API 구성 완료<br>- JWT 기반 권한 인증 및 이력 관리 토대 구축 | **완료** |
-| **Front-end (Flutter)** | - Riverpod 기반 상태 관리 및 API 통신 아키텍처 설계 완료<br>- 마크다운 렌더링 엔진(flutter_markdown) 커스텀 위젯 개발 완료<br>- 관리자 웹 타겟 **Side-by-Side 법령-교안 대조 뷰어 UI 및 검증 리포트** 시각화 완료 | **완료** |
-| **Integration & Test** | - 개발 로컬 인프라(PostgreSQL pgvector, Redis) Docker 컨테이너 가동 중 | **진행 중** |
+| **AI Engine (FastAPI)** | - 조 단위 청킹 파이프라인 및 정밀 주소 Regex 파서 장착 완료<br>- PK 덮어쓰기 방지 고도화 및 멱등성 Upsert 구현 완료<br>- LangGraph RAG 자율 생산 및 자가 검증 감사 체인 완성<br>- 적응형 퀴즈 출제 시 **Exact Match(100% 일치)** SQL 쿼리 최적화로 환각 차단 | **완료 (로컬 E2E 테스트 성료)** |
+| **Back-end (Spring Boot)**| - JPA 핵심 도메인 모델 구축 및 매핑 완료<br>- 문제 출제소(Quiz Factory)를 위한 법령 전문 프록시 API 제공<br>- JWT 기반 권한 인증 및 `quizPayload` 통신 규격 일치화 적용 | **완료** |
+| **Front-end (Flutter)** | - Riverpod 기반 상태 관리 및 API 통신 아키텍처 설계 완료<br>- 오답 노트(Incorrect Note) 전체 지문/보기/정오답 하이라이팅 UX 개편<br>- 관리자 문제 출제소(Factory) 및 퀴즈 출제 피드 UI 통합 완료 | **완료** |
+| **Integration & Test** | - 개발 로컬 인프라(PostgreSQL pgvector, Redis) Docker 컨테이너 가동 중 | **완료** |
 
 ---
 
