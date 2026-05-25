@@ -15,7 +15,11 @@ class CurriculumGeneration(BaseModel):
     category: str = Field(description="교육 카테고리 대분류 (예: 안전보건, 근로기준, 도로교통)")
     law_reference: str = Field(description="RAG의 지식 소스가 된 최신 개정 법령 조항 고유 식별자 또는 조항명 (예: 산업안전보건법 제38조)")
     content_markdown: str = Field(description="최신 법령 팩트를 지식 근거(Ground Truth)로 삼아, 가상 사고 시나리오 및 행동 요령 수칙 스토리텔링이 친근한 입말로 가미되어 기존 강의안 내용을 갱신한 최신화된 마크다운 강의 본문")
-    quiz_proposed: str = Field(description="갱신된 최신 법령 지식을 학습자가 완전히 숙지했는지 확인하기 위한 모의 평가 퀴즈 1문항 및 상세 해설 (객관식 4지선다, 마크다운 포맷. 정답 번호와 해설 포함)")
+    quiz_question: str = Field(description="갱신된 최신 법령 지식을 학습자가 완전히 숙지했는지 확인하기 위한 모의 평가 퀴즈의 스토리텔링형 질문 본문")
+    quiz_options: List[str] = Field(description="객관식 4지선다 보기 항목 4개 (문자열 배열)")
+    quiz_answer_index: int = Field(description="정답 보기의 인덱스 (0부터 3 사이의 정수)")
+    quiz_hint: str = Field(description="문제를 풀 때 도움이 되는 짧은 힌트")
+    quiz_explanation: str = Field(description="문제에 대한 상세 법적 근거 및 해설")
 
 # LangGraph State Definition
 class AgentState(TypedDict):
@@ -88,7 +92,7 @@ async def generate(state: AgentState):
     1. **정밀 리라이팅**: RAG 개정 법령 팩트와 비교하여 기존 강의안의 잘못되었거나 구시대적인 규제 수치(예: '3미터(3m)'에서 '2미터(2m)'로의 변경)가 있다면, 이를 최신 법정 기준으로 확실하게 수정하십시오. 
     2. **문맥 일관성**: 개정된 부분 외의 유용한 설명이나 기본적인 맥락은 유지하되, 전체 강의가 매끄러운 마크다운 본문으로 흐르도록 자연스러운 문체로 보완하십시오.
     3. **정확한 메타데이터 매핑**: 반드시 주어진 핫스왑 대상 강의의 Lesson ID({lesson_id})와 Curriculum ID({curriculum_id})를 스키마의 출력 값으로 정확히 매핑하여 전달해 주어야 합니다.
-    4. **개정 반영 신규 퀴즈 출제**: 개정된 수치나 강화된 의무 사항을 확실하게 저격하는 4지선다형 객관식 모의 퀴즈 1문항을 정답 및 해설과 함께 출제하십시오. 정답은 반드시 최신 개정 법령 기준에 의거해야 합니다.
+    4. **개정 반영 신규 퀴즈 출제**: 개정된 수치나 강화된 의무 사항을 확실하게 저격하는 4지선다형 객관식 모의 퀴즈 1문항을 출제하되, 질문(quiz_question), 보기 4개(quiz_options), 정답 인덱스(quiz_answer_index, 0~3), 힌트(quiz_hint), 해설(quiz_explanation)로 나누어 엄격하게 구조화된 JSON 데이터로 출력하십시오. 정답은 반드시 최신 개정 법령 기준에 의거해야 합니다.
     """
     
     prompt = ChatPromptTemplate.from_messages([
@@ -115,7 +119,11 @@ async def generate(state: AgentState):
             category="안전보건",
             law_reference="산업안전보건법 제38조",
             content_markdown=f"# {affected_lesson.get('title', '고소 작업 및 비계 설치 안전 기준')}\n\n## 1. 개요\n본 강의에서는 고소 작업 시 발생할 수 있는 추락 사고 예방 조치를 학습합니다.\n\n## 2. 비계 설치 기준\n* 높이 2미터(2m) 이상의 장소에서 작업을 진행하는 경우, 근로자의 추락 위험을 방지하기 위하여 반드시 규격에 맞는 추락 방지 안전망을 촘촘히 의무적으로 설치해야 합니다. (기존 3m에서 2m로 개정)",
-            quiz_proposed="### 📝 [QUIZ] 산업안전보건법상 추락 방지망 설치 기준\n\n**Q. 개정된 산업안전보건법에 따라, 제조업 비계 작업 시 근로자 추락 방지망을 의무적으로 설치해야 하는 작업 장소의 최소 높이 기준은 무엇입니까?**\n\n1) 1미터(1m) 이상\n2) 2미터(2m) 이상\n3) 3미터(3m) 이상\n4) 5미터(5m) 이상\n\n**정답: 2**\n\n**해설:** 산업안전보건법 제38조 개정에 따라 고소 작업 현장의 안전 기준이 강화되었습니다. 기존 '3미터(3m) 이상'이었던 추락 방지망 의무 설치 기준이 '2미터(2m) 이상'으로 변경되었습니다."
+            quiz_question="개정된 산업안전보건법에 따라, 제조업 비계 작업 시 근로자 추락 방지망을 의무적으로 설치해야 하는 작업 장소의 최소 높이 기준은 무엇입니까?",
+            quiz_options=["1미터(1m) 이상", "2미터(2m) 이상", "3미터(3m) 이상", "5미터(5m) 이상"],
+            quiz_answer_index=1,
+            quiz_hint="최근 법령이 개정되어 기존 3미터보다 기준이 강화(낮아짐)되었습니다.",
+            quiz_explanation="산업안전보건법 제38조 개정에 따라 고소 작업 현장의 안전 기준이 강화되었습니다. 기존 '3미터(3m) 이상'이었던 추락 방지망 의무 설치 기준이 '2미터(2m) 이상'으로 변경되었습니다."
         )
         result_dict = fallback.dict()
         result = fallback
@@ -129,6 +137,11 @@ async def generate(state: AgentState):
     report += f"### 📝 AI 리라이팅 완료된 강의 본문 (Markdown)\n\n"
     report += f"{result.content_markdown}\n\n"
     report += f"### 📝 최신 개정 반영 신규 퀴즈 제안\n\n"
-    report += f"{result.quiz_proposed}\n"
+    report += f"**Q. {result.quiz_question}**\n\n"
+    for idx, opt in enumerate(result.quiz_options):
+        report += f"{idx + 1}) {opt}\n"
+    report += f"\n**정답:** {result.quiz_answer_index + 1}번\n"
+    report += f"**힌트:** {result.quiz_hint}\n"
+    report += f"**해설:** {result.quiz_explanation}\n"
     
     return {"generation_result": result_dict, "answer": report}

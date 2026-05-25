@@ -1,6 +1,7 @@
 package com.everlaw.edu.domain.approval.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 public record FastApiGenerateResponse(
         @JsonProperty("law_id")
@@ -34,8 +35,20 @@ public record FastApiGenerateResponse(
             @JsonProperty("content_markdown")
             String contentMarkdown,
 
-            @JsonProperty("quiz_proposed")
-            String quizProposed
+            @JsonProperty("quiz_question")
+            String quizQuestion,
+
+            @JsonProperty("quiz_options")
+            List<String> quizOptions,
+
+            @JsonProperty("quiz_answer_index")
+            int quizAnswerIndex,
+
+            @JsonProperty("quiz_hint")
+            String quizHint,
+
+            @JsonProperty("quiz_explanation")
+            String quizExplanation
     ) {}
 
     public record ValidationResult(

@@ -281,4 +281,53 @@
     *   [ ] 사용자의 최근 퀴즈 수강 ID 리스트를 Redis Set 자료구조(`learner_quiz_set:{memberId}`)에 적재하고, 실시간 필터 쿼리를 메모리 레벨에서 초고속 처리하도록 설계.
     *   [ ] 동일 조항에 대한 변형 생성 템플릿의 다양성을 보장하기 위해 가상 도메인 카테고리(제조업, 건설업, 화학공장 등)를 유동적으로 믹싱하는 프롬프트 변동 파라미터(Randomized System Directive) 체계 구현.
 
+---
 
+## 7. 핫픽스 (Phase 2.5): 퀴즈 피드 파이프라인 완전 자동화 및 장애 해결
+
+### Goal Description
+앱에서 로그인 성공 후 [피드] 탭에 진입 시 "출제된 문제가 없습니다."라고 출력되는 문제를 근본적으로 해결하기 위한 파이프라인 수리 계획입니다. AI 엔진이 구조화된 퀴즈 데이터를 생성하도록 스키마를 고도화하고, 백엔드 서버에 퀴즈 은행 및 클라이언트 연동 API를 신설하여 클라이언트가 퀴즈 피드를 정상 수신하도록 조치합니다.
+
+### User Review Required
+> [!IMPORTANT]
+> - AI 엔진의 프롬프트 및 응답 스키마가 변경되어 구조화된 JSON 데이터 형식을 반환하게 됩니다.
+> - 백엔드의 DB 스키마에 `QuizBank` 관련 엔티티와 테이블이 추가되며, AI 엔진 결과 승인 시 퀴즈 데이터를 영속화하는 파이프라인이 추가됩니다.
+
+### Proposed Changes
+
+#### AI Engine
+##### [MODIFY] [app/services/generator.py](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/ai-engine/app/services/generator.py)
+- `CurriculumGeneration` Pydantic 스키마의 `quiz_proposed: str` 단일 필드를 제거하고, `quiz_question`, `quiz_options` (List[str]), `quiz_answer_index`, `quiz_hint`, `quiz_explanation` 필드로 구조화하여 분리.
+- LLM System Prompt를 수정하여 반드시 구조화된 필드에 맞게 퀴즈를 출제하도록 프롬프트 엔지니어링 수행.
+
+#### Spring Boot Back-end
+##### [NEW] [QuizBank.java](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/edu-server/src/main/java/com/everlaw/edu/domain/quiz/QuizBank.java)
+- 통합 문제 은행 엔티티 (id, lessonId, lawReference, question, options, answerIndex, hint, explanation) 생성.
+##### [NEW] [QuizBankRepository.java](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/edu-server/src/main/java/com/everlaw/edu/domain/quiz/QuizBankRepository.java)
+- JpaRepository를 상속받은 리포지토리 생성.
+##### [NEW] [QuizController.java](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/edu-server/src/main/java/com/everlaw/edu/domain/quiz/controller/QuizController.java)
+- 클라이언트용 `GET /api/v1/quizzes` 피드 API 엔드포인트 구현 (임시로 랜덤 조회 기능 탑재).
+##### [MODIFY] [ApprovalService.java](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/edu-server/src/main/java/com/everlaw/edu/domain/approval/service/ApprovalService.java)
+- AI 엔진 Webhook 응답 스키마(DTO) 업데이트.
+- 관리자가 생성된 콘텐츠를 "승인(Approved)" 처리할 때, ApprovalRequest에 담긴 퀴즈 메타데이터를 파싱하여 `QuizBankRepository.save()`를 호출하는 로직 추가.
+
+#### Flutter Front-end
+##### [MODIFY] [quiz_bank_provider.dart](file:///c:/Users/dandycode/Documents/GitHub/everlaw-edu/edu-client/lib/features/quiz/providers/quiz_bank_provider.dart)
+- 에러 발생 시 무음(Silently) 처리하여 빈 배열(`[]`)을 반환하는 대신, 에러 로그를 남기고 예외를 다시 던지거나 UI에 에러 상태가 표시되도록 에러 핸들링 로직 개편.
+
+### Verification Plan
+
+#### Automated Tests
+- Postman 또는 Curl을 통해 AI 트리거 후 관리자 대기열에서 승인 요청 시, `quiz_bank` DB 테이블에 정상적으로 Row가 추가되는지 확인.
+- `GET /api/v1/quizzes` API 호출 시 구조화된 JSON 데이터 배열이 반환되는지 확인.
+
+#### Manual Verification
+- 클라이언트 Flutter 앱 로그인 후 [피드] 탭 진입 시, 더 이상 "출제된 문제가 없습니다."가 뜨지 않고 AI가 생성한 객관식 문제가 Swipe 형태로 정상 노출되는지 육안 확인.
+
+---
+
+## 📝 추후 계획 (Future Memo)
+- **오답노트 즉석 생성(On-the-fly) API 파이프라인 개발**:
+  - 향후 새로운 대화 세션에서 작업할 내역입니다.
+  - 현재 핫픽스는 사전에 생성된 퀴즈를 DB(`quiz_bank`)에서 가져와 피드에 뿌려주는 역할만 담당합니다.
+  - 추후 오답노트 탭에서 사용자의 취약 조항(예: 자주 틀리는 법령)에 대해 "취약점 극복 훈련"을 실행할 때, AI가 즉석에서 새로운 시나리오의 변형 퀴즈를 생성하여 실시간으로 반환하는 `POST /api/chat/adaptive-quiz` API 및 AI 프롬프트 체인을 별도로 개발해야 합니다.

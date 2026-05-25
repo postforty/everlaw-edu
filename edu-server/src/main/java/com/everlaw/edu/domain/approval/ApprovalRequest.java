@@ -40,6 +40,9 @@ public class ApprovalRequest extends BaseTimeEntity {
     @Column(name = "ai_generated_markdown", nullable = false, columnDefinition = "TEXT")
     private String aiGeneratedMarkdown;
 
+    @Column(name = "quiz_payload", columnDefinition = "TEXT")
+    private String quizPayload;
+
     @Column(name = "validation_details", columnDefinition = "TEXT")
     private String validationDetails;
 
@@ -56,13 +59,14 @@ public class ApprovalRequest extends BaseTimeEntity {
 
     @Builder
     public ApprovalRequest(Lesson lesson, Curriculum curriculum, String title, String lawReference,
-                           String aiGeneratedMarkdown, String validationDetails, Double hallucinationScore,
+                           String aiGeneratedMarkdown, String quizPayload, String validationDetails, Double hallucinationScore,
                            ApprovalStatus status) {
         this.lesson = lesson;
         this.curriculum = curriculum;
         this.title = title;
         this.lawReference = lawReference;
         this.aiGeneratedMarkdown = aiGeneratedMarkdown;
+        this.quizPayload = quizPayload;
         this.validationDetails = validationDetails;
         this.hallucinationScore = hallucinationScore;
         this.status = status != null ? status : ApprovalStatus.PENDING;

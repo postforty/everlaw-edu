@@ -13,6 +13,9 @@ import com.everlaw.edu.domain.lesson.Lesson;
 import com.everlaw.edu.domain.lesson.LessonRepository;
 import com.everlaw.edu.domain.snapshot.ContentSnapshot;
 import com.everlaw.edu.domain.snapshot.ContentSnapshotRepository;
+import com.everlaw.edu.domain.quiz.QuizBank;
+import com.everlaw.edu.domain.quiz.QuizBankRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +24,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
-
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -36,6 +39,8 @@ public class ApprovalService {
     private final ContentSnapshotRepository contentSnapshotRepository;
     private final ContentEventPublisher contentEventPublisher;
     private final RestClient aiEngineRestClient;
+    private final QuizBankRepository quizBankRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * 프론트엔드로부터 콘텐츠 생성 요청을 받아 FastAPI AI 엔진에 비동기로 연동을 트리거합니다.
@@ -87,14 +92,26 @@ public class ApprovalService {
         var analysis = response.analysisResult();
         var validation = response.validationResult();
 
-        // 퀴즈를 본문에 포함하거나 메타데이터로 함께 보관하기 위해 마크다운 결합 처리
-        String finalMarkdown = analysis.contentMarkdown() + "\n\n" + analysis.quizProposed();
+        // 퀴즈 페이로드 직렬화
+        String quizPayload = "";
+        try {
+            quizPayload = objectMapper.writeValueAsString(Map.of(
+                "question", analysis.quizQuestion(),
+                "options", analysis.quizOptions(),
+                "answerIndex", analysis.quizAnswerIndex(),
+                "hint", analysis.quizHint(),
+                "explanation", analysis.quizExplanation()
+            ));
+        } catch (Exception e) {
+            log.error("Failed to serialize quiz data", e);
+        }
 
         ApprovalRequest approvalRequest = ApprovalRequest.builder()
                 .curriculum(curriculum)
                 .title(analysis.title())
                 .lawReference(analysis.lawReference())
-                .aiGeneratedMarkdown(finalMarkdown)
+                .aiGeneratedMarkdown(analysis.contentMarkdown())
+                .quizPayload(quizPayload)
                 .validationDetails(validation.validationDetails())
                 .hallucinationScore(validation.hallucinationScore())
                 .status(ApprovalStatus.PENDING)
@@ -163,6 +180,26 @@ public class ApprovalService {
             }
 
             request.approve(lesson);
+
+            // 퀴즈 데이터가 있으면 파싱해서 QuizBank에 영속화
+            if (request.getQuizPayload() != null && !request.getQuizPayload().isEmpty()) {
+                try {
+                    Map<String, Object> quizData = objectMapper.readValue(request.getQuizPayload(), Map.class);
+                    QuizBank quiz = QuizBank.builder()
+                            .lesson(lesson)
+                            .lawReference(request.getLawReference())
+                            .question((String) quizData.get("question"))
+                            .options((List<String>) quizData.get("options"))
+                            .answerIndex((Integer) quizData.get("answerIndex"))
+                            .hint((String) quizData.get("hint"))
+                            .explanation((String) quizData.get("explanation"))
+                            .build();
+                    quizBankRepository.save(quiz);
+                    log.info("📝 [QuizBank] Saved structured quiz for Lesson ID: {}", lesson.getId());
+                } catch (Exception e) {
+                    log.error("Failed to deserialize and save quiz data", e);
+                }
+            }
 
             // 3. 역사적 법적 책임 증빙을 위한 불변 비정규화 스냅샷 영구 저장
             ContentSnapshot snapshot = ContentSnapshot.builder()
