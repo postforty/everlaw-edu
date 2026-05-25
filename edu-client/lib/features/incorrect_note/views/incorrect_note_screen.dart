@@ -143,12 +143,81 @@ class IncorrectNoteScreen extends ConsumerWidget {
                                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                                 children: [
                                   const Divider(),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 12),
+                                  // 질문 영역
                                   Align(
                                     alignment: Alignment.centerLeft,
                                     child: Text(
-                                      note.explanation,
-                                      style: TextStyle(color: Colors.grey.shade800, fontSize: 14, height: 1.5),
+                                      'Q. ${note.question}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.4),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // 보기 영역
+                                  ...List.generate(note.options.length, (optIdx) {
+                                    final optionStr = note.options[optIdx];
+                                    final isCorrect = optIdx == note.answerIndex;
+                                    final isSelectedWrong = optIdx == note.selectedIndex && !isCorrect;
+                                    
+                                    Color bgColor = Colors.transparent;
+                                    Color textColor = Colors.grey.shade800;
+                                    FontWeight fw = FontWeight.normal;
+                                    
+                                    if (isCorrect) {
+                                      bgColor = Colors.green.shade50;
+                                      textColor = Colors.green.shade800;
+                                      fw = FontWeight.bold;
+                                    } else if (isSelectedWrong) {
+                                      bgColor = Colors.red.shade50;
+                                      textColor = Colors.red.shade800;
+                                      fw = FontWeight.w600;
+                                    }
+
+                                    return Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: bgColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isCorrect ? Colors.green.shade200 : (isSelectedWrong ? Colors.red.shade200 : Colors.grey.shade300),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        optionStr,
+                                        style: TextStyle(color: textColor, fontWeight: fw, fontSize: 13.5),
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 16),
+                                  // 해설 영역
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.lightbulb_outline_rounded, size: 18, color: theme.colorScheme.primary),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '상세 해설',
+                                              style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 14),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          note.explanation,
+                                          style: TextStyle(color: Colors.grey.shade800, fontSize: 14, height: 1.5),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(height: 16),

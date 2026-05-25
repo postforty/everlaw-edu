@@ -4,6 +4,7 @@ class ApprovalRequest {
   final String lawReference;
   final String lawReferenceBody;
   final String aiGeneratedMarkdown;
+  final String quizPayload;
   final String validationDetails;
   final double hallucinationScore;
   final String status; // PENDING, APPROVED, REJECTED
@@ -15,6 +16,7 @@ class ApprovalRequest {
     required this.lawReference,
     required this.lawReferenceBody,
     required this.aiGeneratedMarkdown,
+    required this.quizPayload,
     required this.validationDetails,
     required this.hallucinationScore,
     required this.status,
@@ -28,6 +30,7 @@ class ApprovalRequest {
       lawReference: json['lawReference'] as String? ?? 'N/A',
       lawReferenceBody: json['lawReferenceBody'] as String? ?? '법령 원문 내용이 제공되지 않았습니다.',
       aiGeneratedMarkdown: json['aiGeneratedMarkdown'] as String? ?? '',
+      quizPayload: json['quizPayload'] as String? ?? '',
       validationDetails: json['validationDetails'] as String? ?? '',
       hallucinationScore: (json['hallucinationScore'] as num? ?? 0.0).toDouble(),
       status: json['status'] as String? ?? 'PENDING',
@@ -44,6 +47,7 @@ class ApprovalRequest {
       'lawReference': lawReference,
       'lawReferenceBody': lawReferenceBody,
       'aiGeneratedMarkdown': aiGeneratedMarkdown,
+      'quizPayload': quizPayload,
       'validationDetails': validationDetails,
       'hallucinationScore': hallucinationScore,
       'status': status,
@@ -57,6 +61,7 @@ class ApprovalRequest {
     String? lawReference,
     String? lawReferenceBody,
     String? aiGeneratedMarkdown,
+    String? quizPayload,
     String? validationDetails,
     double? hallucinationScore,
     String? status,
@@ -68,6 +73,7 @@ class ApprovalRequest {
       lawReference: lawReference ?? this.lawReference,
       lawReferenceBody: lawReferenceBody ?? this.lawReferenceBody,
       aiGeneratedMarkdown: aiGeneratedMarkdown ?? this.aiGeneratedMarkdown,
+      quizPayload: quizPayload ?? this.quizPayload,
       validationDetails: validationDetails ?? this.validationDetails,
       hallucinationScore: hallucinationScore ?? this.hallucinationScore,
       status: status ?? this.status,

@@ -49,12 +49,14 @@ def add_document_to_vector_store(text: str, metadata: dict):
     
     doc = Document(page_content=text, metadata=metadata)
     
-    # law_name과 article(조)을 조합한 고유 비즈니스 키를 생성하여, 커밋이 변경되더라도 동일한 '조'는 항상 물리적으로 삭제 후 인서트되도록 보장
     law_name = metadata.get("law_name")
     article = metadata.get("article")
+    law_type = metadata.get("law_type", "법률") # 법률, 시행령, 시행규칙
+    is_addenda = "부칙" in metadata.get("Header 2", "") or "부칙" in metadata.get("Header 1", "")
+    addenda_suffix = "_부칙" if is_addenda else ""
     
     if law_name and article:
-        custom_id = f"law_{law_name}_{article}"
+        custom_id = f"law_{law_name}_{law_type}{addenda_suffix}_{article}"
     else:
         law_key = metadata.get("law_id") or metadata.get("commit_sha")
         custom_id = f"law_{law_key}" if law_key else None
@@ -214,9 +216,12 @@ def add_documents_to_vector_store_bulk(documents: List[Document]):
         
         law_name = doc.metadata.get("law_name")
         article = doc.metadata.get("article")
+        law_type = doc.metadata.get("law_type", "법률")
+        is_addenda = "부칙" in doc.metadata.get("Header 2", "") or "부칙" in doc.metadata.get("Header 1", "")
+        addenda_suffix = "_부칙" if is_addenda else ""
         
         if law_name and article:
-            custom_id = f"law_{law_name}_{article}"
+            custom_id = f"law_{law_name}_{law_type}{addenda_suffix}_{article}"
         else:
             law_key = doc.metadata.get("law_id") or doc.metadata.get("commit_sha")
             custom_id = f"law_{law_key}" if law_key else None

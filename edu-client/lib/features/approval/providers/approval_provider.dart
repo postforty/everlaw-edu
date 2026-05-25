@@ -19,6 +19,8 @@ final sourceLawsProvider = FutureProvider.autoDispose<List<SourceLaw>>((ref) asy
   }
 });
 
+/// 현재 출제 중인 법령 ID 목록을 추적하는 로컬 상태 Provider
+final generatingLawsProvider = StateProvider<Set<String>>((ref) => <String>{});
 
 
 /// 승인 대기열 리스트(PENDING 상태 필터링)를 실시간 패치하는 FutureProvider (에러 시 Mock 데이터 반환)

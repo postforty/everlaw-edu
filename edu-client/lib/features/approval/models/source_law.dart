@@ -3,12 +3,14 @@ class SourceLaw {
   final String lawName;
   final String article;
   final String content;
+  final bool isGenerated;
 
   const SourceLaw({
     required this.lawId,
     required this.lawName,
     required this.article,
     required this.content,
+    this.isGenerated = false,
   });
 
   factory SourceLaw.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class SourceLaw {
       lawName: json['lawName'] as String? ?? '',
       article: json['article'] as String? ?? '',
       content: json['content'] as String? ?? '',
+      isGenerated: json['isGenerated'] as bool? ?? false,
     );
   }
 }

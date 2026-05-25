@@ -4,6 +4,7 @@ public record SourceLawResponse(
         String lawId,
         String lawName,
         String article,
-        String content
+        String content,
+        boolean isGenerated
 ) {
 }

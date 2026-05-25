@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
     List<Lesson> findByCurriculumId(Long curriculumId);
+
+    java.util.Optional<Lesson> findByAssociatedLawReference(String associatedLawReference);
 }

@@ -62,7 +62,7 @@ void main() {
                 statusCode: 200,
               ));
 
-      final result = await notifier.registerQuizResult('law1', true);
+      final result = await notifier.submitQuizResult('law1', true);
 
       expect(result, isTrue); // expects true because API returned masteryAchieved: true
       verify(() => mockDio.post('/api/v1/progress/quiz-result', data: {

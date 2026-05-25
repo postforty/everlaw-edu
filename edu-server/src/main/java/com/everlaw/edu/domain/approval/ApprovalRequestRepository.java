@@ -8,4 +8,9 @@ import java.util.List;
 @Repository
 public interface ApprovalRequestRepository extends JpaRepository<ApprovalRequest, Long> {
     List<ApprovalRequest> findByStatus(ApprovalStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.lawReference FROM ApprovalRequest a WHERE a.status != com.everlaw.edu.domain.approval.ApprovalStatus.REJECTED")
+    java.util.Set<String> findAllLawReferences();
+
+    java.util.Optional<ApprovalRequest> findByLawReferenceAndStatus(String lawReference, ApprovalStatus status);
 }

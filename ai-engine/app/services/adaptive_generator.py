@@ -17,6 +17,31 @@ class AdaptiveAgentState(TypedDict):
 
 async def retrieve_law(state: AdaptiveAgentState):
     print(f"---RETRIEVING LAW FOR ADAPTIVE QUIZ: {state['law_reference']}---")
+    
+    # 1. Try exact match first using SQL to prevent Hallucination (Semantic search might return wrong articles)
+    try:
+        from app.core.database import engine
+        from sqlalchemy import text as sql_text
+        with engine.connect() as conn:
+            query = sql_text("""
+                SELECT document 
+                FROM langchain_pg_embedding
+                WHERE 
+                   (cmetadata->>'law_name') || 
+                   CASE WHEN cmetadata->>'law_type' IS NOT NULL AND cmetadata->>'law_type' != '법률' THEN ' ' || (cmetadata->>'law_type') ELSE '' END ||
+                   CASE WHEN (cmetadata->>'Header 2' LIKE '%부칙%') OR (cmetadata->>'Header 1' LIKE '%부칙%') THEN ' 부칙' ELSE '' END ||
+                   ' ' || (cmetadata->>'article') = :law_ref
+                LIMIT 3
+            """)
+            result = conn.execute(query, {"law_ref": state["law_reference"]}).fetchall()
+            if result:
+                print(f"Exact match found in DB for {state['law_reference']}.")
+                return {"context": [row[0] for row in result]}
+    except Exception as e:
+        print(f"Exact match query failed: {e}")
+
+    # 2. Fallback to semantic search if exact match fails
+    print("Falling back to semantic search...")
     retriever = get_retriever()
     documents = await retriever.ainvoke(state["law_reference"])
     context = [doc.page_content for doc in documents]

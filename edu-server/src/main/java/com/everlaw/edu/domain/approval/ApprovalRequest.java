@@ -39,6 +39,9 @@ public class ApprovalRequest extends BaseTimeEntity {
     @Column(name = "law_reference", nullable = false, length = 150)
     private String lawReference;
 
+    @Column(name = "law_reference_body", columnDefinition = "TEXT")
+    private String lawReferenceBody;
+
     @Column(name = "ai_generated_markdown", nullable = false, columnDefinition = "TEXT")
     private String aiGeneratedMarkdown;
 
@@ -60,13 +63,14 @@ public class ApprovalRequest extends BaseTimeEntity {
     private Long version;
 
     @Builder
-    public ApprovalRequest(Lesson lesson, Curriculum curriculum, String title, String lawReference,
+    public ApprovalRequest(Lesson lesson, Curriculum curriculum, String title, String lawReference, String lawReferenceBody,
                            String aiGeneratedMarkdown, String quizPayload, String validationDetails, Double hallucinationScore,
                            ApprovalStatus status) {
         this.lesson = lesson;
         this.curriculum = curriculum;
         this.title = title;
         this.lawReference = lawReference;
+        this.lawReferenceBody = lawReferenceBody;
         this.aiGeneratedMarkdown = aiGeneratedMarkdown;
         this.quizPayload = quizPayload;
         this.validationDetails = validationDetails;
@@ -87,5 +91,16 @@ public class ApprovalRequest extends BaseTimeEntity {
             throw new IllegalStateException("Only PENDING requests can be rejected.");
         }
         this.status = ApprovalStatus.REJECTED;
+    }
+
+    public void updateRequest(String title, String lawReferenceBody, String aiGeneratedMarkdown, 
+                              String quizPayload, String validationDetails, Double hallucinationScore) {
+        this.title = title;
+        this.lawReferenceBody = lawReferenceBody;
+        this.aiGeneratedMarkdown = aiGeneratedMarkdown;
+        this.quizPayload = quizPayload;
+        this.validationDetails = validationDetails;
+        this.hallucinationScore = hallucinationScore;
+        this.status = ApprovalStatus.PENDING;
     }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/ai_validation_card.dart';
-import '../../../core/widgets/markdown_quiz_renderer.dart';
+import '../../../core/widgets/standalone_quiz_card.dart';
+import '../../quiz/models/quiz_item.dart';
 import '../models/approval_request.dart';
 import '../providers/approval_provider.dart';
 
@@ -19,6 +21,38 @@ class ApprovalDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
+  Widget _buildQuizPreview() {
+    if (widget.request.quizPayload.isEmpty) {
+      return const SizedBox();
+    }
+    
+    try {
+      final Map<String, dynamic> quizData = json.decode(widget.request.quizPayload);
+      final List<String> options = List<String>.from(quizData['options'] ?? []);
+      final int answerIdx = quizData['answerIndex'] ?? 0;
+      final String correctAnswer = (answerIdx >= 0 && answerIdx < options.length) ? options[answerIdx] : '';
+
+      final quiz = QuizItem(
+        id: widget.request.id.toString(),
+        question: quizData['question'] ?? '질문 없음',
+        options: options,
+        correctAnswer: correctAnswer,
+        explanation: quizData['explanation'] ?? '',
+        lawReference: widget.request.lawReference,
+      );
+
+      return IgnorePointer( // 프리뷰이므로 클릭 효과 방지
+        child: StandaloneQuizCard(
+          quiz: quiz,
+          onAnswerSelected: (isCorrect, selectedIndex) {},
+          onChatbotRequested: () {},
+        ),
+      );
+    } catch (e) {
+      return Text('퀴즈 데이터를 파싱할 수 없습니다: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -181,16 +215,8 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                           ),
                           const SizedBox(height: 24),
                           
-                          // 마크다운 동적 파싱 렌더러 위젯 호출
-                          // (프리뷰 화면이므로 실시간 풀이 제출은 디버깅 모의 콜백 연동)
-                          MarkdownQuizRenderer(
-                            rawMarkdown: widget.request.aiGeneratedMarkdown,
-                            onQuizSubmit: (selected, confidence) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('프리뷰 모드 제출 답안 감지: $selected ($confidence)')),
-                              );
-                            },
-                          ),
+                          // AI 생산 모의 퀴즈 프리뷰 (StandaloneQuizCard 재사용)
+                          _buildQuizPreview(),
                         ],
                       ),
                     ),
@@ -266,10 +292,7 @@ class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
                     style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  MarkdownQuizRenderer(
-                    rawMarkdown: widget.request.aiGeneratedMarkdown,
-                    onQuizSubmit: (selected, confidence) {},
-                  ),
+                  _buildQuizPreview(),
                 ],
               ),
             ),

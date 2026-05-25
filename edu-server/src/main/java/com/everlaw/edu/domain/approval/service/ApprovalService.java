@@ -80,7 +80,7 @@ public class ApprovalService {
                 }
 
                 log.info("✅ [AI Engine Response] Successfully received generation result from AI Engine.");
-                saveProposedContent(curriculum, response);
+                saveProposedContent(curriculum, request, response);
 
             } catch (Exception e) {
                 log.error("❌ [AI Ingestion Failed] Failed to process RAG generation workflow for Curriculum ID: {}", 
@@ -95,7 +95,7 @@ public class ApprovalService {
      * AI 엔진의 정상 응답 데이터를 트랜잭션 범위 내에서 안전하게 PENDING 상태의 승인 대기열로 적재합니다.
      */
     @Transactional
-    public void saveProposedContent(Curriculum curriculum, FastApiGenerateResponse response) {
+    public void saveProposedContent(Curriculum curriculum, GenerateTriggerRequest request, FastApiGenerateResponse response) {
         var analysis = response.analysisResult();
         var validation = response.validationResult();
 
@@ -113,20 +113,36 @@ public class ApprovalService {
             log.error("Failed to serialize quiz data", e);
         }
 
-        ApprovalRequest approvalRequest = ApprovalRequest.builder()
-                .curriculum(curriculum)
-                .title(analysis.title())
-                .lawReference(analysis.lawReference())
-                .aiGeneratedMarkdown("") // 퀴즈 전용 모드로 전환 (교안 본문 제거)
-                .quizPayload(quizPayload)
-                .validationDetails(validation.validationDetails())
-                .hallucinationScore(validation.hallucinationScore())
-                .status(ApprovalStatus.PENDING)
-                .build();
+        java.util.Optional<ApprovalRequest> existingRequest = approvalRequestRepository.findByLawReferenceAndStatus(response.lawId(), ApprovalStatus.PENDING);
+        ApprovalRequest approvalRequest;
+
+        if (existingRequest.isPresent()) {
+            approvalRequest = existingRequest.get();
+            approvalRequest.updateRequest(
+                analysis.title(),
+                request.lawContent(),
+                response.markdownReport(),
+                quizPayload,
+                validation.validationDetails(),
+                validation.hallucinationScore()
+            );
+            log.info("📥 [Approval Queue] Upserted (Overwritten) existing PENDING request for LawReference: {}", response.lawId());
+        } else {
+            approvalRequest = ApprovalRequest.builder()
+                    .curriculum(curriculum)
+                    .title(analysis.title())
+                    .lawReference(response.lawId())
+                    .lawReferenceBody(request.lawContent())
+                    .aiGeneratedMarkdown(response.markdownReport())
+                    .quizPayload(quizPayload)
+                    .validationDetails(validation.validationDetails())
+                    .hallucinationScore(validation.hallucinationScore())
+                    .status(ApprovalStatus.PENDING)
+                    .build();
+            log.info("📥 [Approval Queue] Created new AI generated content into approval request queue");
+        }
 
         approvalRequestRepository.save(approvalRequest);
-        log.info("📥 [Approval Queue] Successfully loaded AI generated content into approval request queue (ID: {})", 
-                approvalRequest.getId());
     }
 
     /**
@@ -146,6 +162,7 @@ public class ApprovalService {
                 .curriculum(curriculum)
                 .title(fallbackTitle)
                 .lawReference(request.lawId())
+                .lawReferenceBody(request.lawContent())
                 .aiGeneratedMarkdown(fallbackMarkdown)
                 .validationDetails("AI 엔진 통신 오류 발생 폴백 모드 적재: " + ex.getMessage())
                 .hallucinationScore(0.99) // 위험도 적색 경보 부과
@@ -171,7 +188,7 @@ public class ApprovalService {
         if (approved) {
             // 1. 상태를 APPROVED로 승격
             // 2. Lesson 생성 또는 갱신 진행
-            Lesson lesson = request.getLesson();
+            Lesson lesson = lessonRepository.findByAssociatedLawReference(request.getLawReference()).orElse(null);
             if (lesson == null) {
                 // 신규 교안 생성 시나리오
                 lesson = Lesson.builder()
@@ -182,7 +199,7 @@ public class ApprovalService {
                         .build();
                 lessonRepository.save(lesson);
             } else {
-                // 기존 교안 개정 갱신 시나리오
+                // 기존 교안 개정 갱신 시나리오 (Upsert)
                 lesson.updateContent(request.getTitle(), request.getAiGeneratedMarkdown(), request.getLawReference());
             }
 
@@ -192,17 +209,30 @@ public class ApprovalService {
             if (request.getQuizPayload() != null && !request.getQuizPayload().isEmpty()) {
                 try {
                     Map<String, Object> quizData = objectMapper.readValue(request.getQuizPayload(), Map.class);
-                    QuizBank quiz = QuizBank.builder()
-                            .lesson(lesson)
-                            .lawReference(request.getLawReference())
-                            .question((String) quizData.get("question"))
-                            .options((List<String>) quizData.get("options"))
-                            .answerIndex((Integer) quizData.get("answerIndex"))
-                            .hint((String) quizData.get("hint"))
-                            .explanation((String) quizData.get("explanation"))
-                            .build();
-                    quizBankRepository.save(quiz);
-                    log.info("📝 [QuizBank] Saved structured quiz for Lesson ID: {}", lesson.getId());
+                    
+                    QuizBank existingQuiz = quizBankRepository.findByLawReference(request.getLawReference()).orElse(null);
+                    if (existingQuiz != null) {
+                        existingQuiz.updateQuiz(
+                            (String) quizData.get("question"),
+                            (List<String>) quizData.get("options"),
+                            (Integer) quizData.get("answerIndex"),
+                            (String) quizData.get("hint"),
+                            (String) quizData.get("explanation")
+                        );
+                        log.info("📝 [QuizBank] Upserted (Overwritten) structured quiz for LawReference: {}", request.getLawReference());
+                    } else {
+                        QuizBank quiz = QuizBank.builder()
+                                .lesson(lesson)
+                                .lawReference(request.getLawReference())
+                                .question((String) quizData.get("question"))
+                                .options((List<String>) quizData.get("options"))
+                                .answerIndex((Integer) quizData.get("answerIndex"))
+                                .hint((String) quizData.get("hint"))
+                                .explanation((String) quizData.get("explanation"))
+                                .build();
+                        quizBankRepository.save(quiz);
+                        log.info("📝 [QuizBank] Saved new structured quiz for Lesson ID: {}", lesson.getId());
+                    }
                 } catch (Exception e) {
                     log.error("Failed to deserialize and save quiz data", e);
                 }
@@ -256,6 +286,10 @@ public class ApprovalService {
         try {
             log.info("📡 [AI Engine Call] Fetching source laws from FastAPI /api/v1/source-laws...");
             
+            java.util.Set<String> generatedLaws = new java.util.HashSet<>();
+            generatedLaws.addAll(quizBankRepository.findAllLawReferences());
+            generatedLaws.addAll(approvalRequestRepository.findAllLawReferences());
+            
             Map<String, Object> response = aiEngineRestClient.get()
                     .uri("/api/v1/source-laws")
                     .retrieve()
@@ -268,7 +302,8 @@ public class ApprovalService {
                                 item.get("law_id"),
                                 item.get("law_name"),
                                 item.get("article"),
-                                item.get("content")
+                                item.get("content"),
+                                generatedLaws.contains(item.get("law_id"))
                         ))
                         .toList();
             }

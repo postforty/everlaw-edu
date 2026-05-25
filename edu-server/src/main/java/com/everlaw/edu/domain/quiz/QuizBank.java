@@ -58,4 +58,12 @@ public class QuizBank extends BaseTimeEntity {
         this.hint = hint;
         this.explanation = explanation;
     }
+
+    public void updateQuiz(String question, List<String> options, Integer answerIndex, String hint, String explanation) {
+        this.question = question;
+        this.options = options;
+        this.answerIndex = answerIndex;
+        this.hint = hint;
+        this.explanation = explanation;
+    }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1E3A8A); // Premium Deep Blue
@@ -41,7 +42,8 @@ class AppTheme {
         brightness: Brightness.light,
       ),
       useMaterial3: true,
-      fontFamily: 'Inter',
+      fontFamily: GoogleFonts.notoSansKr().fontFamily,
+      fontFamilyFallback: const ['Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif'],
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,

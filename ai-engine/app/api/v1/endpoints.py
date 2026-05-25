@@ -145,20 +145,20 @@ async def adaptive_quiz(request: AdaptiveQuizRequest):
 
 @router.get("/source-laws")
 async def get_source_laws():
-    """PGVector에 적재된 원본 법령 데이터를 중복 없이 반환합니다."""
+    """PGVector에 적재된 원본 법령 데이터를 중복 없이 반환합니다. (내용 제외, 정렬 적용)"""
     try:
         from sqlalchemy import text as sql_text
-        import json
+        import re
         
         laws = []
         with engine.connect() as conn:
-            # cmetadata 컬럼을 파싱하여 law_name과 article, document를 반환 (각 조항별 1개만)
-            # PostgreSQL 특성상 DISTINCT ON 이나 GROUP BY 활용
+            # cmetadata 컬럼을 파싱하여 law_name과 article만 반환
             query = sql_text("""
-                SELECT DISTINCT ON (cmetadata->>'law_name', cmetadata->>'article')
+                SELECT DISTINCT ON (cmetadata->>'law_name', cmetadata->>'law_type', cmetadata->>'Header 2', cmetadata->>'article')
                        cmetadata->>'law_name' as law_name, 
-                       cmetadata->>'article' as article, 
-                       document
+                       cmetadata->>'law_type' as law_type,
+                       cmetadata->>'Header 2' as header_2,
+                       cmetadata->>'article' as article
                 FROM langchain_pg_embedding
                 WHERE cmetadata->>'law_name' IS NOT NULL 
                   AND cmetadata->>'article' IS NOT NULL
@@ -167,15 +167,30 @@ async def get_source_laws():
             
             for row in result:
                 law_name = row[0]
-                article = row[1]
-                document = row[2]
+                law_type = row[1] if row[1] else "법률"
+                header_2 = row[2] if row[2] else ""
+                article = row[3]
+                
+                is_addenda = "부칙" in header_2
+                addenda_str = " 부칙" if is_addenda else ""
+                type_str = f" {law_type}" if law_type != "법률" else ""
+                
+                full_law_name = f"{law_name}{type_str}{addenda_str} {article}"
                 
                 laws.append({
-                    "law_id": f"{law_name} {article}",
+                    "law_id": full_law_name,
                     "law_name": law_name,
                     "article": article,
-                    "content": document
+                    "content": f"{full_law_name} 전문을 기반으로 한 퀴즈 생성을 지원합니다."
                 })
+                
+        # Python Natural Sort
+        def extract_number(text):
+            match = re.search(r'\d+', text)
+            return int(match.group()) if match else 0
+            
+        laws.sort(key=lambda x: (x['law_name'], extract_number(x['article'])))
+        
         return {
             "status": "Success",
             "data": laws

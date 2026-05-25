@@ -185,12 +185,14 @@ class _MarkdownQuizRendererState extends State<MarkdownQuizRenderer> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      _quizQuestion.replaceAll(RegExp(r'### 📝 |Q\.|\*\*문제:\*\*|\[QUIZ\]\s*|### \[QUIZ\]\s*'), '').trim(),
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17,
-                        height: 1.4,
+                    MarkdownBody(
+                      data: _quizQuestion.replaceAll(RegExp(r'### 📝 |Q\.|\*\*문제:\*\*|\[QUIZ\]\s*|### \[QUIZ\]\s*'), '').trim(),
+                      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                        p: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 17,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),

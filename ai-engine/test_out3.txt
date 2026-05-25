@@ -1,0 +1,40 @@
+{
+  "source": "GitHub (legalize-kr/legalize-kr)",
+  "law_name": "산업안전보건법",
+  "law_type": "시행규칙",
+  "chunk_idx": 247,
+  "Header 1": "산업안전보건법 시행규칙",
+  "Header 2": "부칙",
+  "article": "제1조",
+  "article_title": "시행일",
+  "paragraphs": [
+    "①",
+    "②",
+    "③",
+    "④",
+    "⑦",
+    "⑧",
+    "⑥",
+    "⑪",
+    "⑨",
+    "⑩"
+  ],
+  "primary_paragraph": "①",
+  "subparagraphs": [
+    "1호",
+    "2호",
+    "1호",
+    "2호",
+    "1호",
+    "2호",
+    "3호"
+  ],
+  "items": [
+    "가목",
+    "나목",
+    "다목",
+    "라목",
+    "마목"
+  ],
+  "chunk_hash": "b8487be3140c1a7b9c0f1e98d083e388d19d422d742d234470904757e42de99e"
+}

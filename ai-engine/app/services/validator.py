@@ -55,11 +55,19 @@ async def validate(state: AgentState):
     chain = prompt | structured_llm
     
     try:
+        # Pydantic 퀴즈 스키마의 필드들을 조합하여 검증용 텍스트 생성
+        quiz_text = f"문제: {gen_result.get('quiz_question', 'N/A')}\n"
+        for i, opt in enumerate(gen_result.get('quiz_options', [])):
+            quiz_text += f"{i+1}번 보기: {opt}\n"
+        quiz_text += f"정답: {gen_result.get('quiz_answer_index', 0) + 1}번\n"
+        quiz_text += f"힌트: {gen_result.get('quiz_hint', 'N/A')}\n"
+        quiz_text += f"해설: {gen_result.get('quiz_explanation', 'N/A')}"
+
         val_res: ContentValidation = await chain.ainvoke({
             "original_law": law_context_str,
             "title": gen_result.get("title", "N/A"),
             "law_reference": gen_result.get("law_reference", "N/A"),
-            "quiz_proposed": gen_result.get("quiz_proposed", "N/A")
+            "quiz_proposed": quiz_text
         })
         val_dict = val_res.dict()
     except Exception as e:
