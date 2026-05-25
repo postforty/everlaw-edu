@@ -6,6 +6,7 @@ import com.everlaw.edu.domain.approval.ApprovalStatus;
 import com.everlaw.edu.domain.approval.dto.FastApiGenerateResponse;
 import com.everlaw.edu.domain.approval.dto.FastApiLawChangeRequest;
 import com.everlaw.edu.domain.approval.dto.GenerateTriggerRequest;
+import com.everlaw.edu.domain.approval.dto.SourceLawResponse;
 import com.everlaw.edu.domain.approval.event.ContentEventPublisher;
 import com.everlaw.edu.domain.curriculum.Curriculum;
 import com.everlaw.edu.domain.curriculum.CurriculumRepository;
@@ -246,5 +247,35 @@ public class ApprovalService {
     @Transactional(readOnly = true)
     public List<ApprovalRequest> getRequestsByStatus(ApprovalStatus status) {
         return approvalRequestRepository.findByStatus(status);
+    }
+
+    /**
+     * FastAPI AI 엔진에 적재된 원본 법령 데이터를 프록시 조회합니다.
+     */
+    public List<SourceLawResponse> getSourceLaws() {
+        try {
+            log.info("📡 [AI Engine Call] Fetching source laws from FastAPI /api/v1/source-laws...");
+            
+            Map<String, Object> response = aiEngineRestClient.get()
+                    .uri("/api/v1/source-laws")
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && "Success".equalsIgnoreCase((String) response.get("status"))) {
+                List<Map<String, String>> data = (List<Map<String, String>>) response.get("data");
+                return data.stream()
+                        .map(item -> new SourceLawResponse(
+                                item.get("law_id"),
+                                item.get("law_name"),
+                                item.get("article"),
+                                item.get("content")
+                        ))
+                        .toList();
+            }
+            return List.of();
+        } catch (Exception e) {
+            log.error("❌ Failed to fetch source laws from AI Engine", e);
+            return List.of();
+        }
     }
 }

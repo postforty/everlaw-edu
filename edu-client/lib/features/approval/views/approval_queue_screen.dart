@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/approval_request.dart';
 import '../providers/approval_provider.dart';
 import 'approval_detail_screen.dart';
+import 'quiz_generation_factory_screen.dart';
 import '../../../core/network/dio_provider.dart';
 
 class ApprovalQueueScreen extends ConsumerWidget {
@@ -17,13 +18,24 @@ class ApprovalQueueScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '컴플라이언스 자율 생산 검토 대기열',
+          '콘텐츠 승인 대기열',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         foregroundColor: theme.colorScheme.primary,
         elevation: 0.5,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            tooltip: '새로운 퀴즈 출제하기',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const QuizGenerationFactoryScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.invalidate(approvalQueueProvider),

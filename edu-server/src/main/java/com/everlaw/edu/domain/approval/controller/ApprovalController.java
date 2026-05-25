@@ -4,6 +4,7 @@ import com.everlaw.edu.domain.approval.ApprovalRequest;
 import com.everlaw.edu.domain.approval.ApprovalStatus;
 import com.everlaw.edu.domain.approval.dto.ApprovalActionRequest;
 import com.everlaw.edu.domain.approval.dto.GenerateTriggerRequest;
+import com.everlaw.edu.domain.approval.dto.SourceLawResponse;
 import com.everlaw.edu.domain.approval.service.ApprovalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,16 @@ public class ApprovalController {
                 : approvalService.getAllRequests();
                 
         return ResponseEntity.ok(requests);
+    }
+
+    /**
+     * [출제소 API] FastAPI AI 엔진에 등록된 원본 법령(Source Laws) 목록을 조회합니다.
+     */
+    @GetMapping("/source-laws")
+    public ResponseEntity<List<SourceLawResponse>> getSourceLaws() {
+        log.info("📡 [GET /approvals/source-laws] Fetching source laws from AI Engine");
+        List<SourceLawResponse> sourceLaws = approvalService.getSourceLaws();
+        return ResponseEntity.ok(sourceLaws);
     }
 
     /**
