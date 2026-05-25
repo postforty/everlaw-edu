@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edu_client/main.dart';
 import 'package:edu_client/core/providers/shared_preferences_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('App WelcomeScreen basic render smoke test', (WidgetTester tester) async {
+    dotenv.loadFromString(envString: 'API_BASE_URL=http://localhost:8080\nBASE_URL=http://localhost:8080');
+
     // SharedPreferences mock 초기 설정
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
