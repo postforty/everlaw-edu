@@ -42,7 +42,7 @@ class ChatbotNotifier extends StateNotifier<List<ChatMessage>> {
     // 3. 실제 API 연동
     try {
       final response = await _dio.post(
-        '/api/v1/chat',
+        '/chat',
         data: {
           'message': text,
           'context': _initialLawRef,

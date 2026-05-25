@@ -34,7 +34,7 @@ class PushNotificationService {
   Future<void> registerDeviceToken(String token) async {
     try {
       await _dio.post(
-        '/api/v1/users/device-token',
+        '/users/device-token',
         data: {
           'token': token,
           'platform': Platform.isIOS ? 'ios' : 'android',

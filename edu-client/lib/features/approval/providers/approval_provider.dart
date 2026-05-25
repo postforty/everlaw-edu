@@ -9,7 +9,7 @@ final approvalQueueProvider = FutureProvider.autoDispose<List<ApprovalRequest>>(
   
   try {
     final response = await dio.get(
-      '/api/v1/approvals',
+      '/approvals',
       queryParameters: {'status': 'PENDING'},
     );
     
@@ -44,7 +44,7 @@ class ApprovalActionNotifier extends StateNotifier<AsyncValue<void>> {
 
     try {
       final response = await dio.post(
-        '/api/v1/approvals/$requestId/action',
+        '/approvals/$requestId/action',
         data: {
           'approved': approved,
           'adminEmail': adminEmail,

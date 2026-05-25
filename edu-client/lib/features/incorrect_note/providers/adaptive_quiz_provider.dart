@@ -10,7 +10,7 @@ class AdaptiveQuizService {
   Future<String?> generateQuiz(String lawReference) async {
     try {
       final response = await _dio.post(
-        '/api/v1/quizzes/adaptive',
+        '/quizzes/adaptive',
         data: {'lawReference': lawReference},
       );
 
@@ -26,7 +26,7 @@ class AdaptiveQuizService {
   Future<Map<String, dynamic>?> submitQuiz(String lawReference, String answer) async {
     try {
       final response = await _dio.post(
-        '/api/v1/quizzes/submit',
+        '/quizzes/submit',
         data: {
           'lawReference': lawReference,
           'answer': answer,

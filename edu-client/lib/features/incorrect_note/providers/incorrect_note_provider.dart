@@ -12,7 +12,7 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
 
   Future<void> loadNotes() async {
     try {
-      final response = await _dio.get('/api/v1/progress/incorrect-notes');
+      final response = await _dio.get('/progress/incorrect-notes');
       if (response.statusCode == 200) {
         final List<dynamic> decodedList = response.data;
         state = decodedList.map((item) => IncorrectNote.fromMap(item)).toList();
@@ -53,7 +53,7 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   Future<bool> registerQuizResult(String lawReference, bool isCorrect) async {
     try {
       final response = await _dio.post(
-        '/api/v1/progress/quiz-result',
+        '/progress/quiz-result',
         data: {
           'lawReference': lawReference,
           'isCorrect': isCorrect,
