@@ -56,14 +56,20 @@ public class ProgressService {
         } else {
             weaknessIndex.incrementIncorrect();
             
-            // Save to incorrect note
-            MemberIncorrectNote note = MemberIncorrectNote.builder()
-                    .member(member)
-                    .quizBank(quiz)
-                    .lawReference(quiz.getLawReference())
-                    .selectedIndex(request.selectedIndex())
-                    .build();
-            incorrectNoteRepository.save(note);
+            // Save or Update incorrect note
+            incorrectNoteRepository.findByMemberIdAndQuizBankIdAndIsArchivedFalseAndIsDeletedFalse(memberId, quiz.getId())
+                    .ifPresentOrElse(
+                            note -> note.updateSelectedIndex(request.selectedIndex()),
+                            () -> {
+                                MemberIncorrectNote note = MemberIncorrectNote.builder()
+                                        .member(member)
+                                        .quizBank(quiz)
+                                        .lawReference(quiz.getLawReference())
+                                        .selectedIndex(request.selectedIndex())
+                                        .build();
+                                incorrectNoteRepository.save(note);
+                            }
+                    );
         }
 
         weaknessIndexRepository.save(weaknessIndex);
@@ -120,5 +126,14 @@ public class ProgressService {
         return incorrectNoteRepository.findByMemberIdAndIsArchivedFalseAndIsDeletedFalse(memberId).stream()
                 .map(IncorrectNoteResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteIncorrectNote(Long memberId, Long noteId) {
+        incorrectNoteRepository.findById(noteId).ifPresent(note -> {
+            if (note.getMember().getId().equals(memberId)) {
+                note.delete();
+            }
+        });
     }
 }

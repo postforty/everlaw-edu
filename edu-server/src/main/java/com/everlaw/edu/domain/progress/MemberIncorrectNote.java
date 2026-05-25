@@ -59,4 +59,8 @@ public class MemberIncorrectNote extends BaseTimeEntity {
     public void delete() {
         this.isDeleted = true;
     }
+
+    public void updateSelectedIndex(Integer selectedIndex) {
+        this.selectedIndex = selectedIndex;
+    }
 }

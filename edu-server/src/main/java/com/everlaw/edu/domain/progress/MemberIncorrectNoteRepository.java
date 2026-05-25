@@ -13,6 +13,8 @@ public interface MemberIncorrectNoteRepository extends JpaRepository<MemberIncor
     
     List<MemberIncorrectNote> findByMemberIdAndIsArchivedFalseAndIsDeletedFalse(Long memberId);
     
+    java.util.Optional<MemberIncorrectNote> findByMemberIdAndQuizBankIdAndIsArchivedFalseAndIsDeletedFalse(Long memberId, Long quizBankId);
+    
     @Modifying
     @Query("UPDATE MemberIncorrectNote m SET m.isArchived = true WHERE m.member.id = :memberId AND m.lawReference = :lawReference AND m.isArchived = false")
     void archiveByMemberIdAndLawReference(@Param("memberId") Long memberId, @Param("lawReference") String lawReference);

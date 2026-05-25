@@ -42,4 +42,10 @@ public class ProgressController {
         List<IncorrectNoteResponse> notes = progressService.getActiveIncorrectNotes(MOCK_MEMBER_ID);
         return ResponseEntity.ok(notes);
     }
+
+    @DeleteMapping("/incorrect-notes/{noteId}")
+    public ResponseEntity<Void> deleteIncorrectNote(@PathVariable Long noteId) {
+        progressService.deleteIncorrectNote(MOCK_MEMBER_ID, noteId);
+        return ResponseEntity.noContent().build();
+    }
 }

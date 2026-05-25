@@ -73,8 +73,8 @@ class IncorrectNote {
 
   factory IncorrectNote.fromMap(Map<String, dynamic> map) {
     return IncorrectNote(
-      id: map['id'] ?? '',
-      quizId: map['quizId'] ?? '',
+      id: map['id']?.toString() ?? '',
+      quizId: map['quizId']?.toString() ?? '',
       question: map['question'] ?? '',
       options: List<String>.from(map['options'] ?? []),
       answerIndex: map['answerIndex']?.toInt() ?? 0,

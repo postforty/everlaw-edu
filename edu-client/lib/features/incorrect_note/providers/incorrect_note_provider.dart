@@ -36,8 +36,14 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   }
 
   Future<void> deleteNote(String id) async {
-    state = state.where((note) => note.id != id).toList();
-    // TODO: 서버에 삭제 요청 (필요한 경우)
+    try {
+      final response = await _dio.delete('/progress/incorrect-notes/$id');
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        state = state.where((note) => note.id != id).toList();
+      }
+    } catch (e) {
+      // 에러 발생 시 처리 (현재는 로그 또는 무시)
+    }
   }
 
   Future<void> archiveByLawReference(String lawReference) async {
