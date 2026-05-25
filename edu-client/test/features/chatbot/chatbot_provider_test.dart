@@ -17,9 +17,9 @@ void main() {
     });
 
     test('sendMessage calls /api/v1/chat and updates state', () async {
-      when(() => mockDio.post('/api/v1/chat', data: any(named: 'data')))
+      when(() => mockDio.post('/chat', data: any(named: 'data')))
           .thenAnswer((_) async => Response(
-                requestOptions: RequestOptions(path: '/api/v1/chat'),
+                requestOptions: RequestOptions(path: '/chat'),
                 data: {'response': 'This is AI response from server'},
                 statusCode: 200,
               ));
@@ -31,16 +31,16 @@ void main() {
       expect(notifier.state.last.sender, ChatSender.ai);
       expect(notifier.state.last.text, 'This is AI response from server');
 
-      verify(() => mockDio.post('/api/v1/chat', data: {
+      verify(() => mockDio.post('/chat', data: {
         'message': 'Hello AI',
         'context': 'Test Law',
       })).called(1);
     });
 
     test('sendMessage handles error and shows error message', () async {
-      when(() => mockDio.post('/api/v1/chat', data: any(named: 'data')))
+      when(() => mockDio.post('/chat', data: any(named: 'data')))
           .thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/api/v1/chat'),
+        requestOptions: RequestOptions(path: '/chat'),
         error: 'Network Error',
       ));
 

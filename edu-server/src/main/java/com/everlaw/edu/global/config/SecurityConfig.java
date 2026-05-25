@@ -61,6 +61,7 @@ public class SecurityConfig {
                         // 회원가입, 로그인 등 인증 통과는 전체 공개
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         // 헬스체크 및 루트 공개
+                        .requestMatchers("/api/v1/chat/**", "/api/v1/chat").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // 데모 개발 편의를 위해 최신 레슨 및 결재 요청 목록을 전체 공개 허용

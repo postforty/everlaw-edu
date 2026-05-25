@@ -26,6 +26,12 @@ class ChatbotNotifier extends StateNotifier<List<ChatMessage>> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    // 0. 전송 전까지의 대화 기록 추출 (단기 메모리용)
+    final history = state.map((msg) => {
+      'role': msg.sender == ChatSender.user ? 'user' : 'ai',
+      'content': msg.text,
+    }).toList();
+
     // 1. 유저 메시지 즉시 추가
     final userMsg = ChatMessage.user(text, referencedLaw: _initialLawRef);
     state = [...state, userMsg];
@@ -45,7 +51,8 @@ class ChatbotNotifier extends StateNotifier<List<ChatMessage>> {
         '/chat',
         data: {
           'message': text,
-          'context': _initialLawRef,
+          'context': _initialLawRef ?? "",
+          'history': history,
         },
       );
 

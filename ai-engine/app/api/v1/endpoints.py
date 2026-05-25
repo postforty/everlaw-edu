@@ -27,6 +27,11 @@ class AdaptiveQuizRequest(BaseModel):
     law_reference: str
     previous_questions: list[str] = []
 
+class ChatRequest(BaseModel):
+    message: str
+    context: str = ""
+    history: list[dict] = []
+
 @router.get("/status")
 async def status():
     return {
@@ -197,3 +202,21 @@ async def get_source_laws():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/chat")
+async def chat_with_assistant(request: ChatRequest):
+    """지정된 법령 컨텍스트와 이전 대화 기록을 바탕으로 질문에 답변합니다."""
+    try:
+        from app.services.chat_service import generate_chat_response_async
+        response_text = await generate_chat_response_async(
+            message=request.message,
+            context=request.context,
+            history=request.history
+        )
+        return {
+            "status": "Success",
+            "response": response_text
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
