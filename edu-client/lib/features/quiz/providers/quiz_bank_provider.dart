@@ -8,7 +8,9 @@ final quizBankProvider = FutureProvider<List<QuizItem>>((ref) async {
     final response = await dio.get('/api/v1/quizzes');
     final List data = response.data as List;
     return data.map((json) => QuizItem.fromJson(json)).toList();
-  } catch (e) {
-    return [];
+  } catch (e, stackTrace) {
+    print('Failed to fetch quiz bank: $e');
+    print(stackTrace);
+    throw Exception('Failed to load quiz feed from server: $e');
   }
 });
