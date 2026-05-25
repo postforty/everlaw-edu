@@ -207,23 +207,37 @@ class _InlineChatbotSheetState extends ConsumerState<InlineChatbotSheet> {
                             ),
                           ],
                         ),
-                        child: isUser 
-                            ? Text(
-                                msg.text,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14.5,
-                                  height: 1.5,
-                                ),
-                              )
-                            : MarkdownBody(
-                                data: msg.text,
-                                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                                  p: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
-                                  strong: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
-                                  listBullet: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
-                                ),
-                              ),
+                        child: Builder(
+                          builder: (context) {
+                            String displayText = msg.text;
+                            if (!isUser) {
+                              // flutter_markdown의 인라인 파싱 한계를 우회하기 위해 **"텍스트"** 를 "**텍스트**" 로 치환
+                              // 또한 **텍스트(부가설명)** 처럼 괄호가 포함된 경우 **텍스트**(부가설명) 으로 치환
+                              displayText = displayText
+                                  .replaceAllMapped(RegExp(r'\*\*"([^"]+)"\*\*'), (m) => '"**${m.group(1)}**"')
+                                  .replaceAllMapped(RegExp(r"\*\*'([^']+)'\*\*"), (m) => "'**${m.group(1)}**'")
+                                  .replaceAllMapped(RegExp(r'\*\*(.*?)(\s*)\(([^\)]+)\)\*\*', dotAll: true), (m) => '**${m.group(1)}**${m.group(2)}(${m.group(3)})');
+                            }
+                            
+                            return isUser 
+                                ? Text(
+                                    displayText,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14.5,
+                                      height: 1.5,
+                                    ),
+                                  )
+                                : MarkdownBody(
+                                    data: displayText,
+                                    styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                                      p: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
+                                      strong: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
+                                      listBullet: const TextStyle(color: Colors.black87, fontSize: 14.5, height: 1.5),
+                                    ),
+                                  );
+                          }
+                        ),
                       ),
                     );
                   },
