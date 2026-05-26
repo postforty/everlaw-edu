@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dio_provider.dart';
 import 'auth_interceptor.dart';
 
@@ -91,6 +93,51 @@ class AuthService {
     currentUserRole = null;
     currentUserEmail = null;
     return true;
+  }
+
+  /// 구글 소셜 로그인 처리
+  Future<bool> googleLogin() async {
+    try {
+      final String? clientId = dotenv.env['GOOGLE_CLIENT_ID'];
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: clientId,
+      );
+
+      final GoogleSignInAccount? account = await googleSignIn.signIn();
+      if (account == null) {
+        // 사용자가 로그인 팝업을 취소한 경우
+        return false;
+      }
+
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final String? idToken = auth.idToken;
+
+      if (idToken == null) {
+        return false;
+      }
+
+      // 서버의 구글 로그인 API 호출
+      final response = await _dio.post(
+        '/auth/google',
+        data: {
+          'idToken': idToken,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final token = response.data['token'] as String;
+        final role = response.data['role'] as String;
+        final emailStr = response.data['email'] as String;
+        await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRole(role);
+        currentUserRole = role;
+        currentUserEmail = emailStr;
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+    return false;
   }
 }
 

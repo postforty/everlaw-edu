@@ -26,6 +26,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	
+	// Google API Client for Token Verification
+	implementation 'com.google.api-client:google-api-client:2.2.0'
+	
 	// JWT 의존성 추가 (io.jsonwebtoken v0.12.6)
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'

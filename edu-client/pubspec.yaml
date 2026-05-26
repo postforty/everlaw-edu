@@ -21,6 +21,7 @@ dependencies:
   # Network & Security
   dio: ^5.4.0
   flutter_secure_storage: ^9.0.0
+  google_sign_in: ^6.2.1
 
   # Markdown Renderer
   flutter_markdown: ^0.6.18+2

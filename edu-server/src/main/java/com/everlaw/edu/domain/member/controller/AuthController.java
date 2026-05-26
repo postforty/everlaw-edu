@@ -1,6 +1,7 @@
 package com.everlaw.edu.domain.member.controller;
 
 import com.everlaw.edu.domain.member.dto.AuthResponse;
+import com.everlaw.edu.domain.member.dto.GoogleLoginRequest;
 import com.everlaw.edu.domain.member.dto.LoginRequest;
 import com.everlaw.edu.domain.member.dto.SignUpRequest;
 import com.everlaw.edu.domain.member.service.MemberService;
@@ -39,6 +40,16 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("📡 [POST /auth/login] Login authentication requested: {}", request.email());
         AuthResponse response = memberService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [구글 소셜 로그인 API] 구글 ID 토큰을 검증하고 자체 JWT를 취득합니다.
+     */
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        log.info("📡 [POST /auth/google] Google login authentication requested");
+        AuthResponse response = memberService.googleLogin(request);
         return ResponseEntity.ok(response);
     }
 }
