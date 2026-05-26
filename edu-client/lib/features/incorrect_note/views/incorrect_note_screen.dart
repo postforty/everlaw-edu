@@ -5,7 +5,8 @@ import '../providers/incorrect_note_provider.dart';
 import '../../chatbot/views/inline_chatbot_sheet.dart';
 import 'adaptive_quiz_clinic_screen.dart';
 import '../../../core/theme/app_theme.dart';
-
+import '../../../core/network/auth_provider.dart';
+import '../../auth/views/login_screen.dart';
 class IncorrectNoteScreen extends ConsumerWidget {
   const IncorrectNoteScreen({super.key});
 
@@ -30,6 +31,22 @@ class IncorrectNoteScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.grey),
+            tooltip: '로그아웃',
+            onPressed: () async {
+              await ref.read(authServiceProvider).logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: notes.isEmpty
           ? const Center(

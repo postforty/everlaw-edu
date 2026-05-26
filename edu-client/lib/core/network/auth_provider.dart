@@ -85,6 +85,13 @@ class AuthService {
     }
     return false;
   }
+  /// 로그아웃 처리
+  Future<bool> logout() async {
+    await AuthInterceptor.deleteToken();
+    currentUserRole = null;
+    currentUserEmail = null;
+    return true;
+  }
 }
 
 final authServiceProvider = Provider<AuthService>((ref) {

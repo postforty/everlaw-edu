@@ -7,6 +7,8 @@ import '../../chatbot/views/inline_chatbot_sheet.dart';
 import '../../incorrect_note/providers/incorrect_note_provider.dart';
 import '../../incorrect_note/models/incorrect_note.dart';
 import '../../../core/widgets/mastery_celebration_dialog.dart';
+import '../../../core/network/auth_provider.dart';
+import '../../auth/views/login_screen.dart';
 
 class QuizFeedScreen extends ConsumerStatefulWidget {
   const QuizFeedScreen({super.key});
@@ -100,13 +102,27 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
             actions: [
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
+                  padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
                     '${_currentIndex + 1} / ${quizzes.length}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
                   ),
                 ),
-              )
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout_rounded, color: Colors.grey),
+                tooltip: '로그아웃',
+                onPressed: () async {
+                  await ref.read(authServiceProvider).logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
             ],
           ),
           body: PageView.builder(

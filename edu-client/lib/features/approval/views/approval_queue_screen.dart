@@ -4,6 +4,8 @@ import '../models/approval_request.dart';
 import '../providers/approval_provider.dart';
 import 'approval_detail_screen.dart';
 import 'quiz_generation_factory_screen.dart';
+import '../../../core/network/auth_provider.dart';
+import '../../auth/views/login_screen.dart';
 
 class ApprovalQueueScreen extends ConsumerWidget {
   const ApprovalQueueScreen({super.key});
@@ -39,7 +41,20 @@ class ApprovalQueueScreen extends ConsumerWidget {
             onPressed: () => ref.invalidate(approvalQueueProvider),
             tooltip: '새로고침',
           ),
-          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.grey),
+            tooltip: '로그아웃',
+            onPressed: () async {
+              await ref.read(authServiceProvider).logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       backgroundColor: Colors.grey.shade50,
