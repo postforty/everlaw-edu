@@ -26,9 +26,10 @@ public class ProgressService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public ProgressQuizSubmitResponse submitQuizResult(Long memberId, ProgressQuizSubmitRequest request) {
-        Member member = memberRepository.findById(memberId)
+    public ProgressQuizSubmitResponse submitQuizResult(String email, ProgressQuizSubmitRequest request) {
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Long memberId = member.getId();
 
         QuizBank quiz = quizBankRepository.findById(request.quizId())
                 .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
@@ -84,9 +85,10 @@ public class ProgressService {
     }
 
     @Transactional
-    public ProgressQuizSubmitResponse submitAdaptiveQuizResult(Long memberId, String lawReference, boolean isCorrect) {
-        Member member = memberRepository.findById(memberId)
+    public ProgressQuizSubmitResponse submitAdaptiveQuizResult(String email, String lawReference, boolean isCorrect) {
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Long memberId = member.getId();
 
         MemberWeaknessIndex weaknessIndex = weaknessIndexRepository.findByMemberIdAndLawReference(memberId, lawReference)
                 .orElseGet(() -> MemberWeaknessIndex.builder()
@@ -122,14 +124,20 @@ public class ProgressService {
     }
 
     @Transactional(readOnly = true)
-    public List<IncorrectNoteResponse> getActiveIncorrectNotes(Long memberId) {
+    public List<IncorrectNoteResponse> getActiveIncorrectNotes(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Long memberId = member.getId();
         return incorrectNoteRepository.findByMemberIdAndIsArchivedFalseAndIsDeletedFalse(memberId).stream()
                 .map(IncorrectNoteResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void deleteIncorrectNote(Long memberId, Long noteId) {
+    public void deleteIncorrectNote(String email, Long noteId) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Long memberId = member.getId();
         incorrectNoteRepository.findById(noteId).ifPresent(note -> {
             if (note.getMember().getId().equals(memberId)) {
                 note.delete();

@@ -1,1 +1,3 @@
 .env
+run-server.bat
+run-server.ps1

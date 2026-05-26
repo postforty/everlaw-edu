@@ -18,34 +18,35 @@ public class ProgressController {
 
     private final ProgressService progressService;
 
-    // For demo purposes, we are hardcoding memberId = 1L.
-    // In a real application, this should come from JWT / Spring Security Context.
-    private final Long MOCK_MEMBER_ID = 1L;
-
     @PostMapping("/submit-quiz")
     public ResponseEntity<ProgressQuizSubmitResponse> submitQuizResult(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String email,
             @Valid @RequestBody ProgressQuizSubmitRequest request) {
-        ProgressQuizSubmitResponse response = progressService.submitQuizResult(MOCK_MEMBER_ID, request);
+        ProgressQuizSubmitResponse response = progressService.submitQuizResult(email, request);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/submit-adaptive-quiz")
     public ResponseEntity<ProgressQuizSubmitResponse> submitAdaptiveQuizResult(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String email,
             @Valid @RequestBody AdaptiveQuizSubmitRequest request) {
         ProgressQuizSubmitResponse response = progressService.submitAdaptiveQuizResult(
-                MOCK_MEMBER_ID, request.lawReference(), request.isCorrect());
+                email, request.lawReference(), request.isCorrect());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/incorrect-notes")
-    public ResponseEntity<List<IncorrectNoteResponse>> getIncorrectNotes() {
-        List<IncorrectNoteResponse> notes = progressService.getActiveIncorrectNotes(MOCK_MEMBER_ID);
+    public ResponseEntity<List<IncorrectNoteResponse>> getIncorrectNotes(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String email) {
+        List<IncorrectNoteResponse> notes = progressService.getActiveIncorrectNotes(email);
         return ResponseEntity.ok(notes);
     }
 
     @DeleteMapping("/incorrect-notes/{noteId}")
-    public ResponseEntity<Void> deleteIncorrectNote(@PathVariable Long noteId) {
-        progressService.deleteIncorrectNote(MOCK_MEMBER_ID, noteId);
+    public ResponseEntity<Void> deleteIncorrectNote(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String email,
+            @PathVariable Long noteId) {
+        progressService.deleteIncorrectNote(email, noteId);
         return ResponseEntity.noContent().build();
     }
 }

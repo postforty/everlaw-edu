@@ -28,7 +28,7 @@ ai-engine:
   url: ${AI_ENGINE_URL:http://localhost:8000}
 
 jwt:
-  secret: ${JWT_SECRET:VmVyeVN0cm9uZ1NlY3JldEtleUZvckV2ZXJMYXdBcHBsaWNhdGlvbktleTIwMjY=}
+  secret: ${JWT_SECRET}
   # 1일 (86400000 밀리초)
   expiration: ${JWT_EXPIRATION:86400000}
 

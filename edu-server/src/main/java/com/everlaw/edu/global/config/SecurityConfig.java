@@ -64,9 +64,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/chat/**", "/api/v1/chat").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
-                        // 데모 개발 편의를 위해 최신 레슨 및 결재 요청 목록을 전체 공개 허용
-                        .requestMatchers("/api/v1/lessons/**", "/api/v1/lessons").permitAll()
-                        .requestMatchers("/api/v1/approvals/**", "/api/v1/approvals").permitAll()
+                        // 레슨 조회는 인증된 사용자만, 승인 파이프라인은 관리자만 접근 가능하도록 패치
+                        .requestMatchers("/api/v1/lessons/**", "/api/v1/lessons").authenticated()
+                        .requestMatchers("/api/v1/approvals/**", "/api/v1/approvals").hasRole("ADMIN")
                         // 그 외 모든 요청은 토큰 기반 인증 필수
                         .anyRequest().authenticated()
                 )
