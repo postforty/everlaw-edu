@@ -62,4 +62,8 @@ public class MemberWeaknessIndex extends BaseTimeEntity {
         this.consecutiveCorrects = 0;
         this.weaknessScore = 0.0;
     }
+
+    public void decrementForDeletion() {
+        this.weaknessScore = Math.max(0.0, this.weaknessScore - 5.0);
+    }
 }

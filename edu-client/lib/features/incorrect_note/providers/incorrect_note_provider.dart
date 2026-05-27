@@ -1,13 +1,40 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/incorrect_note.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../../core/database/database_helper.dart';
 
 class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   final Dio _dio;
+  final Connectivity _connectivity;
+  final DatabaseHelper _dbHelper;
+  StreamSubscription? _connectivitySubscription;
 
-  IncorrectNoteNotifier(this._dio) : super([]) {
+  IncorrectNoteNotifier(
+    this._dio, {
+    Connectivity? connectivity,
+    DatabaseHelper? dbHelper,
+  })  : _connectivity = connectivity ?? Connectivity(),
+        _dbHelper = dbHelper ?? DatabaseHelper.instance,
+        super([]) {
     loadNotes();
+    _initConnectivityListener();
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((result) {
+      if (result != ConnectivityResult.none) {
+        syncOutbox();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> loadNotes() async {
@@ -15,16 +42,32 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
       final response = await _dio.get('/progress/incorrect-notes');
       if (response.statusCode == 200) {
         final List<dynamic> decodedList = response.data;
-        state = decodedList.map((item) => IncorrectNote.fromMap(item)).toList();
+        final serverNotes = decodedList.map((item) => IncorrectNote.fromMap(item)).toList();
+        
+        final localPendingDeletes = await _dbHelper.getPendingDeleteIds();
+        
+        state = serverNotes.where((n) => !localPendingDeletes.contains(n.id)).toList();
       }
     } catch (e) {
-      // 에러 발생 시 처리 (현재는 로그 또는 무시)
+      // 에러 발생 시 처리
+    }
+  }
+
+  Future<void> syncOutbox() async {
+    final pendingDeletes = await _dbHelper.getPendingDeleteIds();
+    for (final id in pendingDeletes) {
+      try {
+        final response = await _dio.delete('/progress/incorrect-notes/$id');
+        if (response.statusCode == 204 || response.statusCode == 200) {
+          await _dbHelper.deleteNote(id);
+        }
+      } catch (e) {
+        // sync failed, will retry later
+      }
     }
   }
 
   Future<void> addNote(IncorrectNote note) async {
-    // API 서버에서 오답노트 추가 처리를 할 수도 있지만, 
-    // 로컬 상태를 우선 업데이트하고 registerQuizResult 시 함께 서버로 전송됨
     final existingIndex = state.indexWhere((n) => n.quizId == note.quizId);
     if (existingIndex >= 0) {
       final newState = [...state];
@@ -36,13 +79,24 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
   }
 
   Future<void> deleteNote(String id) async {
+    final noteToDelete = state.firstWhere(
+      (note) => note.id == id, 
+      orElse: () => IncorrectNote(id: id, quizId: '', question: '', options: [], answerIndex: 0, selectedIndex: 0, explanation: '', lawReference: '', incorrectAt: '')
+    );
+    if (noteToDelete.quizId.isEmpty) return; // Note not found in state
+
+    // Optimistic UI update
+    state = state.where((note) => note.id != id).toList();
+
     try {
       final response = await _dio.delete('/progress/incorrect-notes/$id');
-      if (response.statusCode == 204 || response.statusCode == 200) {
-        state = state.where((note) => note.id != id).toList();
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Delete failed');
       }
     } catch (e) {
-      // 에러 발생 시 처리 (현재는 로그 또는 무시)
+      // Offline or network error: Save to local DB as pendingDelete
+      final offlineNote = noteToDelete.copyWith(syncStatus: SyncStatus.pendingDelete);
+      await _dbHelper.insertNote(offlineNote);
     }
   }
 
@@ -55,7 +109,6 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
     }).toList();
   }
 
-  /// returns true if mastery achieved (consecutive reached 3)
   Future<bool> submitQuizResult(int quizId, int selectedIndex) async {
     try {
       final response = await _dio.post(
@@ -71,11 +124,9 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
         final isGraduated = data['isGraduated'] ?? false;
         
         if (isGraduated) {
-          // You might need the lawReference to archive it locally, 
-          // but for now we can just reload notes from the server.
           await loadNotes();
         } else if (data['isCorrect'] == false) {
-           await loadNotes(); // Reload notes if they got it wrong so it adds to list
+           await loadNotes();
         }
         return isGraduated;
       }

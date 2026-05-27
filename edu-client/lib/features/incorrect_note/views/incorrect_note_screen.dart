@@ -129,8 +129,27 @@ class IncorrectNoteScreen extends ConsumerWidget {
                           ? DateFormat('yyyy.MM.dd HH:mm').format(DateTime.tryParse(note.incorrectAt) ?? DateTime.now())
                           : '';
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
+                      return Dismissible(
+                        key: Key(note.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade400,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 30),
+                        ),
+                        onDismissed: (direction) {
+                          ref.read(incorrectNoteProvider.notifier).deleteNote(note.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('해당 오답 항목을 학습 완료(삭제) 처리했습니다.')),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: AppShadows.premiumSoft,
@@ -266,7 +285,8 @@ class IncorrectNoteScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        );
+                        ),
+                      );
                     },
                   ),
                 ),

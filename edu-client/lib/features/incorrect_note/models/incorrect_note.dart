@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+enum SyncStatus { synced, pendingDelete, pendingAdd }
+
 class IncorrectNote {
   final String id;
   final String quizId;
@@ -11,7 +13,7 @@ class IncorrectNote {
   final String lawReference;
   final String incorrectAt;
   final bool isArchived;
-  final bool isSynced;
+  final SyncStatus syncStatus;
 
   IncorrectNote({
     required this.id,
@@ -24,7 +26,7 @@ class IncorrectNote {
     required this.lawReference,
     required this.incorrectAt,
     this.isArchived = false,
-    this.isSynced = false,
+    this.syncStatus = SyncStatus.synced,
   });
 
   IncorrectNote copyWith({
@@ -38,7 +40,7 @@ class IncorrectNote {
     String? lawReference,
     String? incorrectAt,
     bool? isArchived,
-    bool? isSynced,
+    SyncStatus? syncStatus,
   }) {
     return IncorrectNote(
       id: id ?? this.id,
@@ -51,7 +53,7 @@ class IncorrectNote {
       lawReference: lawReference ?? this.lawReference,
       incorrectAt: incorrectAt ?? this.incorrectAt,
       isArchived: isArchived ?? this.isArchived,
-      isSynced: isSynced ?? this.isSynced,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 
@@ -60,30 +62,41 @@ class IncorrectNote {
       'id': id,
       'quizId': quizId,
       'question': question,
-      'options': options,
+      'options': jsonEncode(options), // SQLite requires string for lists
       'answerIndex': answerIndex,
       'selectedIndex': selectedIndex,
       'explanation': explanation,
       'lawReference': lawReference,
       'incorrectAt': incorrectAt,
-      'isArchived': isArchived,
-      'isSynced': isSynced,
+      'isArchived': isArchived ? 1 : 0, // SQLite doesn't support bool directly
+      'syncStatus': syncStatus.name,
     };
   }
 
   factory IncorrectNote.fromMap(Map<String, dynamic> map) {
+    // Handle SQLite options parsing
+    List<String> parsedOptions = [];
+    if (map['options'] is String) {
+      parsedOptions = List<String>.from(jsonDecode(map['options']));
+    } else {
+      parsedOptions = List<String>.from(map['options'] ?? []);
+    }
+
     return IncorrectNote(
       id: map['id']?.toString() ?? '',
       quizId: map['quizId']?.toString() ?? '',
       question: map['question'] ?? '',
-      options: List<String>.from(map['options'] ?? []),
+      options: parsedOptions,
       answerIndex: map['answerIndex']?.toInt() ?? 0,
       selectedIndex: map['selectedIndex']?.toInt() ?? 0,
       explanation: map['explanation'] ?? '',
       lawReference: map['lawReference'] ?? '',
       incorrectAt: map['incorrectAt'] ?? '',
-      isArchived: map['isArchived'] ?? false,
-      isSynced: map['isSynced'] ?? false,
+      isArchived: map['isArchived'] == 1 || map['isArchived'] == true,
+      syncStatus: SyncStatus.values.firstWhere(
+        (e) => e.name == map['syncStatus'],
+        orElse: () => SyncStatus.synced,
+      ),
     );
   }
 

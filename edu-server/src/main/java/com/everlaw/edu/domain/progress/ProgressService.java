@@ -140,7 +140,13 @@ public class ProgressService {
         Long memberId = member.getId();
         incorrectNoteRepository.findById(noteId).ifPresent(note -> {
             if (note.getMember().getId().equals(memberId)) {
-                note.delete();
+                if (!note.getIsDeleted()) {
+                    note.delete();
+                    if (!note.getIsArchived()) {
+                        weaknessIndexRepository.findByMemberIdAndLawReference(memberId, note.getLawReference())
+                                .ifPresent(MemberWeaknessIndex::decrementForDeletion);
+                    }
+                }
             }
         });
     }

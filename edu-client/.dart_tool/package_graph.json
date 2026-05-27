@@ -7,6 +7,7 @@
       "name": "edu_client",
       "version": "1.0.0+1",
       "dependencies": [
+        "connectivity_plus",
         "cupertino_icons",
         "dio",
         "flutter",
@@ -18,8 +19,11 @@
         "google_sign_in",
         "intl",
         "lottie",
+        "path",
         "riverpod_annotation",
         "shared_preferences",
+        "sqflite",
+        "sqflite_common_ffi",
         "uuid"
       ],
       "devDependencies": [
@@ -140,6 +144,23 @@
       ]
     },
     {
+      "name": "connectivity_plus",
+      "version": "5.0.2",
+      "dependencies": [
+        "connectivity_plus_platform_interface",
+        "flutter",
+        "flutter_web_plugins",
+        "js",
+        "meta",
+        "nm"
+      ]
+    },
+    {
+      "name": "path",
+      "version": "1.9.1",
+      "dependencies": []
+    },
+    {
       "name": "google_fonts",
       "version": "8.1.0",
       "dependencies": [
@@ -205,6 +226,17 @@
         "markdown",
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "google_sign_in",
+      "version": "6.3.0",
+      "dependencies": [
+        "flutter",
+        "google_sign_in_android",
+        "google_sign_in_ios",
+        "google_sign_in_platform_interface",
+        "google_sign_in_web"
       ]
     },
     {
@@ -314,11 +346,6 @@
         "source_span",
         "yaml"
       ]
-    },
-    {
-      "name": "path",
-      "version": "1.9.1",
-      "dependencies": []
     },
     {
       "name": "meta",
@@ -716,6 +743,29 @@
       ]
     },
     {
+      "name": "nm",
+      "version": "0.5.0",
+      "dependencies": [
+        "dbus"
+      ]
+    },
+    {
+      "name": "flutter_web_plugins",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "connectivity_plus_platform_interface",
+      "version": "1.2.4",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
       "name": "path_provider",
       "version": "2.1.5",
       "dependencies": [
@@ -804,6 +854,42 @@
       "dependencies": [
         "args",
         "meta"
+      ]
+    },
+    {
+      "name": "google_sign_in_web",
+      "version": "0.12.4+4",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "google_identity_services_web",
+        "google_sign_in_platform_interface",
+        "http",
+        "web"
+      ]
+    },
+    {
+      "name": "google_sign_in_platform_interface",
+      "version": "2.5.0",
+      "dependencies": [
+        "flutter",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "google_sign_in_ios",
+      "version": "5.9.0",
+      "dependencies": [
+        "flutter",
+        "google_sign_in_platform_interface"
+      ]
+    },
+    {
+      "name": "google_sign_in_android",
+      "version": "6.2.1",
+      "dependencies": [
+        "flutter",
+        "google_sign_in_platform_interface"
       ]
     },
     {
@@ -1051,6 +1137,13 @@
       ]
     },
     {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "path_provider_windows",
       "version": "2.3.0",
       "dependencies": [
@@ -1110,17 +1203,11 @@
       ]
     },
     {
-      "name": "flutter_web_plugins",
-      "version": "0.0.0",
+      "name": "google_identity_services_web",
+      "version": "0.3.3+1",
       "dependencies": [
-        "flutter"
-      ]
-    },
-    {
-      "name": "plugin_platform_interface",
-      "version": "2.1.8",
-      "dependencies": [
-        "meta"
+        "meta",
+        "web"
       ]
     },
     {
@@ -1237,58 +1324,127 @@
       ]
     },
     {
-      "name": "google_sign_in",
-      "version": "6.3.0",
+      "name": "sqflite",
+      "version": "2.4.2+1",
       "dependencies": [
         "flutter",
-        "google_sign_in_android",
-        "google_sign_in_ios",
-        "google_sign_in_platform_interface",
-        "google_sign_in_web"
+        "path",
+        "sqflite_android",
+        "sqflite_common",
+        "sqflite_darwin",
+        "sqflite_platform_interface"
       ]
     },
     {
-      "name": "google_sign_in_web",
-      "version": "0.12.4+4",
+      "name": "sqflite_platform_interface",
+      "version": "2.4.0",
       "dependencies": [
         "flutter",
-        "flutter_web_plugins",
-        "google_identity_services_web",
-        "google_sign_in_platform_interface",
-        "http",
-        "web"
+        "meta",
+        "platform",
+        "plugin_platform_interface",
+        "sqflite_common"
       ]
     },
     {
-      "name": "google_sign_in_platform_interface",
-      "version": "2.5.0",
+      "name": "sqflite_darwin",
+      "version": "2.4.2",
       "dependencies": [
         "flutter",
-        "plugin_platform_interface"
+        "meta",
+        "path",
+        "sqflite_common",
+        "sqflite_platform_interface"
       ]
     },
     {
-      "name": "google_sign_in_ios",
-      "version": "5.9.0",
+      "name": "sqflite_android",
+      "version": "2.4.2+3",
       "dependencies": [
         "flutter",
-        "google_sign_in_platform_interface"
+        "path",
+        "sqflite_common",
+        "sqflite_platform_interface"
       ]
     },
     {
-      "name": "google_sign_in_android",
-      "version": "6.2.1",
-      "dependencies": [
-        "flutter",
-        "google_sign_in_platform_interface"
-      ]
-    },
-    {
-      "name": "google_identity_services_web",
-      "version": "0.3.3+1",
+      "name": "sqflite_common",
+      "version": "2.5.8",
       "dependencies": [
         "meta",
+        "path",
+        "synchronized"
+      ]
+    },
+    {
+      "name": "dbus",
+      "version": "0.7.13",
+      "dependencies": [
+        "args",
+        "ffi",
+        "meta",
+        "xml"
+      ]
+    },
+    {
+      "name": "xml",
+      "version": "7.0.1",
+      "dependencies": [
+        "collection",
+        "meta",
+        "petitparser"
+      ]
+    },
+    {
+      "name": "petitparser",
+      "version": "7.0.2",
+      "dependencies": [
+        "collection",
+        "meta"
+      ]
+    },
+    {
+      "name": "synchronized",
+      "version": "3.4.0+1",
+      "dependencies": []
+    },
+    {
+      "name": "sqflite_common_ffi",
+      "version": "2.4.0+3",
+      "dependencies": [
+        "meta",
+        "path",
+        "sqflite_common",
+        "sqlite3",
+        "synchronized"
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version": "3.3.2",
+      "dependencies": [
+        "code_assets",
+        "collection",
+        "crypto",
+        "ffi",
+        "hooks",
+        "meta",
+        "native_toolchain_c",
+        "path",
+        "typed_data",
         "web"
+      ]
+    },
+    {
+      "name": "native_toolchain_c",
+      "version": "0.19.0",
+      "dependencies": [
+        "code_assets",
+        "glob",
+        "hooks",
+        "logging",
+        "meta",
+        "pub_semver"
       ]
     }
   ],

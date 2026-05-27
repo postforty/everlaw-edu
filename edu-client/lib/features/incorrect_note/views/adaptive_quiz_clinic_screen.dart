@@ -71,7 +71,8 @@ class _AdaptiveQuizClinicScreenState extends ConsumerState<AdaptiveQuizClinicScr
         if (!mounted) return;
 
         if (achievedMastery && context.mounted) {
-          // 3회 연속 정답 시 졸업 축하 팝업 다이얼로그 호출
+          // 3회 연속 정답 시 졸업 축하 팝업 다이얼로그 호출 및 로컬 상태 동기화
+          ref.read(incorrectNoteProvider.notifier).archiveByLawReference(widget.weakLawRef);
           MasteryCelebrationDialog.show(context, widget.weakLawRef);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
