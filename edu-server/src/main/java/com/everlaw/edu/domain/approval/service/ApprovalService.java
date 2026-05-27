@@ -68,31 +68,58 @@ public class ApprovalService {
                         .targetJobCategory("전직군")
                         .build()));
 
-        FastApiLawChangeRequest fastApiRequest = new FastApiLawChangeRequest(request.lawId(), request.lawContent());
-
         // 2. 비동기 HTTP 호출 파이프라인 기동
         return CompletableFuture.runAsync(() -> {
             try {
-                log.info("📡 [AI Engine Call] Sending request to FastAPI API /api/v1/generate-content...");
+                // 기존 대기열의 PENDING 항목 선삭제 (덮어쓰기 로직 대신 클렌징 후 5개 신규 삽입)
+                approvalTransactionHelper.deletePendingRequests(request.lawId());
                 
-                FastApiGenerateResponse response = aiEngineRestClient.post()
-                        .uri("/api/v1/generate-content")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(fastApiRequest)
-                        .retrieve()
-                        .body(FastApiGenerateResponse.class);
+                java.util.List<String> previousQuestions = new java.util.ArrayList<>();
+                int successCount = 0;
 
-                if (response == null || !"Success".equalsIgnoreCase(response.status())) {
-                    String statusMsg = response != null ? response.status() : "NULL RESPONSE";
-                    throw new RuntimeException("AI Engine returned failure status: " + statusMsg);
+                for (int i = 0; i < 5; i++) {
+                    FastApiLawChangeRequest fastApiRequest = new FastApiLawChangeRequest(request.lawId(), request.lawContent(), new java.util.ArrayList<>(previousQuestions));
+                    try {
+                        log.info("📡 [AI Engine Call] Sending request {}/5 to FastAPI API /api/v1/generate-content...", i + 1);
+                        
+                        FastApiGenerateResponse response = aiEngineRestClient.post()
+                                .uri("/api/v1/generate-content")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(fastApiRequest)
+                                .retrieve()
+                                .body(FastApiGenerateResponse.class);
+
+                        if (response == null || !"Success".equalsIgnoreCase(response.status())) {
+                            String statusMsg = response != null ? response.status() : "NULL RESPONSE";
+                            throw new RuntimeException("AI Engine returned failure status: " + statusMsg);
+                        }
+
+                        // 부분 성공 허용: 성공한 문제는 즉시 저장
+                        approvalTransactionHelper.saveProposedContent(curriculum, request, response);
+                        successCount++;
+                        
+                        // 다음 퀴즈 출제 시 중복 방지를 위해 질문 컨텍스트 누적
+                        if (response.analysisResult() != null && response.analysisResult().quizQuestion() != null) {
+                            previousQuestions.add(response.analysisResult().quizQuestion());
+                        }
+
+                        log.info("✅ [AI Engine Response] Successfully received generation result {}/5 from AI Engine.", i + 1);
+                    } catch (Exception loopEx) {
+                        log.error("❌ [AI Ingestion Failed] Failed to process RAG generation on iteration {}/5 for Curriculum ID: {}", 
+                                i + 1, curriculum.getId(), loopEx);
+                    }
+                    
+                    // LLM API Rate Limit(15 RPM) 방어를 위한 4초 강제 쓰로틀링
+                    if (i < 4) {
+                        try { Thread.sleep(4000); } catch (InterruptedException ignore) {}
+                    }
                 }
-
-                log.info("✅ [AI Engine Response] Successfully received generation result from AI Engine.");
-                approvalTransactionHelper.saveProposedContent(curriculum, request, response);
-
+                
+                if (successCount == 0) {
+                    throw new RuntimeException("모든 5개의 문제 생성이 실패했습니다.");
+                }
             } catch (Exception e) {
-                log.error("❌ [AI Ingestion Failed] Failed to process RAG generation workflow for Curriculum ID: {}", 
-                        curriculum.getId(), e);
+                log.error("❌ [AI Generation Pipeline Failed] Curriculum ID: {}", curriculum.getId(), e);
                 // 비즈니스 무중단 및 장애 전파 차단을 위해 예외를 던지지 않고 복구 흐름 처리
                 approvalTransactionHelper.saveFallbackContent(curriculum, request, e);
             }

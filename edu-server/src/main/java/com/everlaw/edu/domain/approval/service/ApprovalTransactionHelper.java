@@ -44,34 +44,18 @@ public class ApprovalTransactionHelper {
             log.error("Failed to serialize quiz data", e);
         }
 
-        java.util.Optional<ApprovalRequest> existingRequest = approvalRequestRepository.findByLawReferenceAndStatus(response.lawId(), ApprovalStatus.PENDING);
-        ApprovalRequest approvalRequest;
-
-        if (existingRequest.isPresent()) {
-            approvalRequest = existingRequest.get();
-            approvalRequest.updateRequest(
-                analysis.title(),
-                request.lawContent(),
-                response.markdownReport(),
-                quizPayload,
-                validation.validationDetails(),
-                validation.hallucinationScore()
-            );
-            log.info("📥 [Approval Queue] Upserted (Overwritten) existing PENDING request for LawReference: {}", response.lawId());
-        } else {
-            approvalRequest = ApprovalRequest.builder()
-                    .curriculum(curriculum)
-                    .title(analysis.title())
-                    .lawReference(response.lawId())
-                    .lawReferenceBody(request.lawContent())
-                    .aiGeneratedMarkdown(response.markdownReport())
-                    .quizPayload(quizPayload)
-                    .validationDetails(validation.validationDetails())
-                    .hallucinationScore(validation.hallucinationScore())
-                    .status(ApprovalStatus.PENDING)
-                    .build();
-            log.info("📥 [Approval Queue] Created new AI generated content into approval request queue");
-        }
+        ApprovalRequest approvalRequest = ApprovalRequest.builder()
+                .curriculum(curriculum)
+                .title(analysis.title())
+                .lawReference(response.lawId())
+                .lawReferenceBody(request.lawContent())
+                .aiGeneratedMarkdown(response.markdownReport())
+                .quizPayload(quizPayload)
+                .validationDetails(validation.validationDetails())
+                .hallucinationScore(validation.hallucinationScore())
+                .status(ApprovalStatus.PENDING)
+                .build();
+        log.info("📥 [Approval Queue] Created new AI generated content into approval request queue for LawReference: {}", response.lawId());
 
         approvalRequestRepository.save(approvalRequest);
     }
@@ -102,5 +86,11 @@ public class ApprovalTransactionHelper {
 
         approvalRequestRepository.save(approvalRequest);
         log.warn("⚠️ [Approval Queue - Fallback] Loaded fallback compliance content into queue due to infrastructure exception.");
+    }
+
+    @Transactional
+    public void deletePendingRequests(String lawReference) {
+        approvalRequestRepository.deleteByLawReferenceAndStatus(lawReference, ApprovalStatus.PENDING);
+        log.info("🗑️ [Approval Queue] Deleted existing PENDING requests for LawReference: {}", lawReference);
     }
 }

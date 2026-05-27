@@ -7,6 +7,9 @@ public record FastApiLawChangeRequest(
         String lawId,
 
         @JsonProperty("content")
-        String content
+        String content,
+
+        @JsonProperty("previous_questions")
+        java.util.List<String> previousQuestions
 ) {
 }

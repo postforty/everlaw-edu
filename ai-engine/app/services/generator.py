@@ -21,6 +21,7 @@ class QuizGeneration(BaseModel):
 class AgentState(TypedDict):
     question: str                  # 생산하고자 하는 교육 주제 또는 법령 텍스트
     context: List[str]             # law_documents에서 의미론적으로 검색된 법령 전문 텍스트 목록 (Ground Truth)
+    previous_questions: List[str]  # 중복 출제 방지를 위한 이전 퀴즈 지문 목록
     generation_result: dict        # Gemini가 자율 생산한 구조화 JSON 데이터 (QuizGeneration)
     validation_result: dict        # 자가 사실 확인 감사 결과 데이터 (ContentValidation)
     answer: str                    # 관리자 대조 화면용 퀴즈 마크다운 리포트
@@ -49,6 +50,9 @@ async def generate(state: AgentState):
     context = state.get("context", [])
     
     law_context_str = "\n\n".join(context)
+    previous_questions_str = "\n".join([f"- {q}" for q in state.get("previous_questions", [])])
+    if not previous_questions_str:
+        previous_questions_str = "없음 (첫 출제입니다)"
     structured_llm = llm.with_structured_output(QuizGeneration)
     
     template = """당신은 법률 및 기업 컴플라이언스 교육 전문 AI 에이전트입니다.
@@ -57,8 +61,11 @@ async def generate(state: AgentState):
     [법령 팩트 (Ground Truth)]
     {law_context}
     
+    [이전에 출제되었던 문제들 (반드시 제외)]
+    {previous_questions}
+    
     [퀴즈 출제 가이드라인]
-    1. **현장 스토리텔링 지문**: 딱딱한 법령 조문을 가상의 현장 사례 및 인물(예: 김 대리, 박 소장 등)의 사건을 다룬 스토리텔링형 지문으로 구성하십시오.
+    1. **절대 중복 금지**: [이전에 출제되었던 문제들]과 상황, 가상 인물(예: 김 대리, 박 소장 등), 질문의 관점이 겹치지 않도록 **완전히 새로운 시나리오**를 창작하십시오.
     2. **명확한 정답과 매력적인 오답**: 4개의 객관식 보기 중 정답은 오직 1개이며, 나머지 3개는 법령을 헷갈리기 쉽게 만드는 매력적인 오답으로 구성하십시오.
     3. **친절한 힌트와 상세한 해설**: 학습자가 생각하도록 유도하는 힌트와, 정답 및 오답의 이유를 법적 근거에 기반하여 상세히 설명하는 해설을 작성하십시오.
     4. **구조화된 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 JSON 데이터로 출력하십시오.
@@ -66,13 +73,14 @@ async def generate(state: AgentState):
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", template),
-        ("human", "위 가이드라인에 따라 제공된 법령 팩트에 근거하여 실무 스토리텔링형 4지선다 퀴즈를 출제해주세요.")
+        ("human", "위 가이드라인에 따라 제공된 법령 팩트에 근거하여 완전히 새로운 실무 스토리텔링형 4지선다 퀴즈를 출제해주세요.")
     ])
     chain = prompt | structured_llm
     
     try:
         result: QuizGeneration = await chain.ainvoke({
-            "law_context": law_context_str
+            "law_context": law_context_str,
+            "previous_questions": previous_questions_str
         })
         result_dict = result.dict()
     except Exception as e:

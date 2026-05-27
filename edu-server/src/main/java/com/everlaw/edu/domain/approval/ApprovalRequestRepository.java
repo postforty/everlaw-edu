@@ -12,5 +12,7 @@ public interface ApprovalRequestRepository extends JpaRepository<ApprovalRequest
     @org.springframework.data.jpa.repository.Query("SELECT a.lawReference FROM ApprovalRequest a WHERE a.status != com.everlaw.edu.domain.approval.ApprovalStatus.REJECTED")
     java.util.Set<String> findAllLawReferences();
 
-    java.util.Optional<ApprovalRequest> findByLawReferenceAndStatus(String lawReference, ApprovalStatus status);
+    List<ApprovalRequest> findByLawReferenceAndStatus(String lawReference, ApprovalStatus status);
+    
+    void deleteByLawReferenceAndStatus(String lawReference, ApprovalStatus status);
 }
