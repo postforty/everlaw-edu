@@ -19,6 +19,7 @@ class QuizGeneration(BaseModel):
 
 # LangGraph State Definition
 class AgentState(TypedDict):
+    law_id: str                    # 법령 이름 및 조항 (예: 산업안전보건법 제24조제1항)
     question: str                  # 생산하고자 하는 교육 주제 또는 법령 텍스트
     context: List[str]             # law_documents에서 의미론적으로 검색된 법령 전문 텍스트 목록 (Ground Truth)
     previous_questions: List[str]  # 중복 출제 방지를 위한 이전 퀴즈 지문 목록
@@ -30,6 +31,7 @@ class AgentState(TypedDict):
 async def retrieve(state: AgentState):
     """지식 소스(law_documents)로부터 법령 전문 팩트를 의미론적으로 검색"""
     print("---RETRIEVING GROUND TRUTH LAW---")
+    law_id = state.get("law_id", "")
     question = state["question"]
     
     # 1. 최신 법령 전문 팩트 검색
@@ -40,6 +42,27 @@ async def retrieve(state: AgentState):
     # RAG 검색 결과가 없으면 원본 question 자체를 컨텍스트로 사용
     if not context:
         context = [question]
+        
+    # 2. 다중 홉(Multi-hop) 검색: 참조된 별표 탐지 (Top 1 문서에서만 추출하여 불필요한 별표 폭탄 방지)
+    import re
+    top_doc_content = documents[0].page_content if documents else question
+    references = list(set(re.findall(r'별표\s*\d+', top_doc_content)))
+    
+    if references:
+        # 최대 2개의 별표만 검색 (토큰 제한 및 환각 방지)
+        references = references[:2]
+        print(f"---MULTI-HOP RETRIEVAL: Found references {references}---")
+        # 법령 이름 추출 (예: "산업안전보건법 제24조제1항" -> "산업안전보건법")
+        law_name_match = re.match(r'([^\s제]+)', law_id)
+        law_name = law_name_match.group(1) if law_name_match else "법령"
+        
+        for ref in references:
+            # 2차 검색 쿼리 구성 (예: "산업안전보건법 시행령 별표 9")
+            secondary_query = f"{law_name} 시행령 {ref}"
+            print(f"Secondary Query: {secondary_query}")
+            extra_docs = await retriever.ainvoke(secondary_query)
+            # 2차 검색 결과를 컨텍스트에 추가
+            context.extend([doc.page_content for doc in extra_docs[:2]])
 
     return {"context": context}
 
@@ -68,8 +91,9 @@ async def generate(state: AgentState):
     1. **절대 중복 금지**: [이전에 출제되었던 문제들]과 상황, 가상 인물(예: 김 대리, 박 소장 등), 질문의 관점이 겹치지 않도록 **완전히 새로운 시나리오**를 창작하십시오.
     2. **명확한 정답과 매력적인 오답**: 4개의 객관식 보기 중 정답은 오직 1개이며, 나머지 3개는 법령을 헷갈리기 쉽게 만드는 매력적인 오답으로 구성하십시오.
     3. **친절한 힌트와 상세한 해설**: 학습자가 생각하도록 유도하는 힌트와, 정답 및 오답의 이유를 법적 근거에 기반하여 상세히 설명하는 해설을 작성하십시오.
-    4. **법령의 실체적 내용(Substance) 질문 필수**: "어느 조항에 명시되어 있는가?", "어떤 별표를 봐야 하는가?"와 같이 법령의 '위치'나 '조항 번호' 자체를 정답으로 요구하는 메타(Meta)적인 질문은 절대 출제하지 마십시오. 대신, 상시근로자 수 기준, 구체적인 의무 사항, 면제 조건 등 실무자가 반드시 숙지해야 할 '법령의 구체적인 핵심 내용'을 묻는 질문으로 구성하십시오.
-    5. **구조화된 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 JSON 데이터로 출력하십시오.
+    4. **메타 질문 절대 금지**: "어느 조항에 명시되어 있는가?", "어떤 별표를 봐야 하는가?", "참조해야 할 법적 근거는 무엇인가?" 와 같이 법령의 '위치', '조항 번호', '법적 근거 명칭' 자체를 묻는 문제는 절대 출제하지 마십시오.
+    5. **위임/참조 조항 처리 및 수치 활용**: 제공된 [법령 팩트] 내에 구체적인 수치 데이터(예: 50명, 100명 등)가 있다면 반드시 이를 활용하여 실무적인 시나리오(예: "상시근로자 60명인 제조업은?")를 구성하십시오. 만약 구체적 수치가 없고 단순히 "별표에 따른다"는 문구만 있다면, 법적 근거 명칭을 묻지 말고 법령 본문에 명시된 **가장 핵심적인 원칙이나 목적(예: "근로자와 사용자가 같은 수로 구성해야 한다")**을 묻는 문제를 출제하십시오.
+    6. **구조화된 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 JSON 데이터로 출력하십시오.
     """
     
     prompt = ChatPromptTemplate.from_messages([

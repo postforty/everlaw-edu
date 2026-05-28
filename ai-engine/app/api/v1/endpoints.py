@@ -88,7 +88,7 @@ async def seed_curriculum(request: CurriculumSeedRequest):
 async def generate_content(request: LawChangeRequest):
     try:
         # RAG 엔진 비동기 호출 (차분 분석 & 구조화 JSON 및 마크다운 동시 생성)
-        result = await generate_rag_content_async(request.content, request.previous_questions)
+        result = await generate_rag_content_async(request.law_id, request.content, request.previous_questions)
         return {
             "law_id": request.law_id,
             "analysis_result": result["analysis_result"],

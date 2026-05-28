@@ -78,10 +78,10 @@ public class ApprovalService {
                 java.util.List<FastApiGenerateResponse> successfulResponses = new java.util.ArrayList<>();
                 int successCount = 0;
 
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < 2; i++) {
                     FastApiLawChangeRequest fastApiRequest = new FastApiLawChangeRequest(request.lawId(), request.lawContent(), new java.util.ArrayList<>(previousQuestions));
                     try {
-                        log.info("📡 [AI Engine Call] Sending request {}/5 to FastAPI API /api/v1/generate-content...", i + 1);
+                        log.info("📡 [AI Engine Call] Sending request {}/2 to FastAPI API /api/v1/generate-content...", i + 1);
                         
                         FastApiGenerateResponse response = aiEngineRestClient.post()
                                 .uri("/api/v1/generate-content")
@@ -104,9 +104,9 @@ public class ApprovalService {
                             previousQuestions.add(response.analysisResult().quizQuestion());
                         }
 
-                        log.info("✅ [AI Engine Response] Successfully received generation result {}/5 from AI Engine.", i + 1);
+                        log.info("✅ [AI Engine Response] Successfully received generation result {}/2 from AI Engine.", i + 1);
                     } catch (Exception loopEx) {
-                        log.error("❌ [AI Ingestion Failed] Failed to process RAG generation on iteration {}/5 for Curriculum ID: {}", 
+                        log.error("❌ [AI Ingestion Failed] Failed to process RAG generation on iteration {}/2 for Curriculum ID: {}", 
                                 i + 1, curriculum.getId(), loopEx);
                     }
                     
@@ -122,7 +122,7 @@ public class ApprovalService {
                 }
                 
                 if (successCount == 0) {
-                    throw new RuntimeException("모든 5개의 문제 생성이 실패했습니다.");
+                    throw new RuntimeException("모든 2개의 문제 생성이 실패했습니다.");
                 }
             } catch (Exception e) {
                 log.error("❌ [AI Generation Pipeline Failed] Curriculum ID: {}", curriculum.getId(), e);

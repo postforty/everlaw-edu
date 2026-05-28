@@ -40,13 +40,35 @@ async def retrieve_law(state: AdaptiveAgentState):
     except Exception as e:
         print(f"Exact match query failed: {e}")
 
-    # 2. Fallback to semantic search if exact match fails
+    # 2. Fallback to semantic search if exact match fails or for extra context
     print("Falling back to semantic search...")
     retriever = get_retriever()
     documents = await retriever.ainvoke(state["law_reference"])
     context = [doc.page_content for doc in documents]
     if not context:
         context = [state["law_reference"]]
+        
+    # 3. 다중 홉(Multi-hop) 검색: 참조된 별표 탐지 (Top 1 문서에서만 추출하여 불필요한 별표 폭탄 방지)
+    import re
+    top_doc_content = documents[0].page_content if documents else state["law_reference"]
+    references = list(set(re.findall(r'별표\s*\d+', top_doc_content)))
+    
+    if references:
+        # 최대 2개의 별표만 검색 (토큰 제한 및 환각 방지)
+        references = references[:2]
+        print(f"---MULTI-HOP RETRIEVAL: Found references {references}---")
+        # 법령 이름 추출 (예: "산업안전보건법 제24조제1항" -> "산업안전보건법")
+        law_name_match = re.match(r'([^\s제]+)', state["law_reference"])
+        law_name = law_name_match.group(1) if law_name_match else "법령"
+        
+        for ref in references:
+            # 2차 검색 쿼리 구성 (예: "산업안전보건법 시행령 별표 9")
+            secondary_query = f"{law_name} 시행령 {ref}"
+            print(f"Secondary Query: {secondary_query}")
+            extra_docs = await retriever.ainvoke(secondary_query)
+            # 2차 검색 결과를 컨텍스트에 추가
+            context.extend([doc.page_content for doc in extra_docs[:2]])
+
     return {"context": context}
 
 async def generate_adaptive(state: AdaptiveAgentState):
@@ -68,11 +90,12 @@ async def generate_adaptive(state: AdaptiveAgentState):
     {previous_questions}
     
     [변형 퀴즈 출제 가이드라인]
-    1. **절대 중복 금지**: [이전에 출제되었던 문제들]과 상황, 가상 인물(예: 김 대리 등), 질문의 관점이 겹치지 않도록 **완전히 새로운 시나리오**를 창작하세요.
-    2. **명확한 정답과 매력적인 오답**: 4개의 객관식 보기 중 정답은 오직 1개이며, 나머지는 헷갈리기 쉬운 오답으로 구성하세요.
-    3. **친절한 힌트와 상세한 해설**: 힌트와 해설을 작성하세요.
-    4. **법령의 실체적 내용(Substance) 질문 필수**: "어느 조항에 명시되어 있는가?", "어떤 별표를 봐야 하는가?"와 같이 법령의 '위치'나 '조항 번호' 자체를 정답으로 요구하는 메타(Meta)적인 질문은 절대 출제하지 마십시오. 대신, 상시근로자 수 기준, 구체적인 의무 사항, 면제 조건 등 실무자가 반드시 숙지해야 할 '법령의 구체적인 핵심 내용'을 묻는 질문으로 구성하십시오.
-    5. **구조화된 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 JSON 데이터로 출력하세요.
+    1. **절대 중복 금지**: [이전에 출제되었던 문제들]과 완벽히 차별화된 **새로운 실무 시나리오(새로운 인물, 새로운 업종, 새로운 상황)**를 창작하십시오.
+    2. **난이도 및 함정**: 정답은 명확하되, 오답은 실무자가 현장에서 흔히 착각하는 법적 오해(함정)를 포함하여 난이도를 높이십시오.
+    3. **메타 질문 절대 금지**: "어느 조항인가?", "어떤 별표인가?", "어떤 법적 근거를 참조해야 하는가?" 등의 메타 질문은 금지하며, 법령의 '구체적인 핵심 내용'을 물어보십시오.
+    4. **위임/참조 조항 처리 및 수치 활용**: 제공된 [법령 팩트] 내에 구체적인 수치 데이터(예: 50명, 100명 등)가 있다면 반드시 이를 활용하여 실무적인 시나리오를 구성하십시오. 만약 구체적 수치가 없고 단순히 "별표에 따른다"는 문구만 있다면, 법적 근거 명칭을 묻지 말고 법령 본문에 명시된 **가장 핵심적인 원칙이나 목적(예: "근로자와 사용자가 같은 수로 구성해야 한다")**을 묻는 문제를 출제하십시오.
+    5. **친절한 해설**: 정답과 오답의 이유를 법적 근거에 기반하여 명확히 해설하십시오.
+    6. **구조화된 JSON 출력**: 반드시 `QuizGeneration` 스키마 규격에 맞춰 출력하십시오.
     """
     
     prompt = ChatPromptTemplate.from_messages([

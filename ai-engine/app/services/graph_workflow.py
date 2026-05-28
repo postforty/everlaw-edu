@@ -30,11 +30,11 @@ def generate_rag_content(question: str) -> dict:
         "markdown_report": result.get("answer")
     }
 
-async def generate_rag_content_async(question: str, previous_questions: list[str] = None) -> dict:
+async def generate_rag_content_async(law_id: str, question: str, previous_questions: list[str] = None) -> dict:
     """FastAPI 및 비동기 파이프라인에서 호출할 RAG 콘텐츠 자동 생성 및 검증 워크플로우 진입점 (비동기 버전)"""
     if previous_questions is None:
         previous_questions = []
-    inputs = {"question": question, "previous_questions": previous_questions}
+    inputs = {"law_id": law_id, "question": question, "previous_questions": previous_questions}
     result = await graph_app.ainvoke(inputs)
     
     return {

@@ -28,17 +28,17 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
           ),
         );
         
-        // 3초 단위로 백엔드를 폴링하여(최대 30초) 실제 생성 여부를 체크
+        // 5초 단위로 백엔드를 폴링하여(최대 2.5분) 실제 생성 여부를 체크
         bool isFinished = false;
-        for (int i = 0; i < 10; i++) {
-          await Future.delayed(const Duration(seconds: 3));
-          if (!context.mounted) break;
+        for (int i = 0; i < 30; i++) {
+          await Future.delayed(const Duration(seconds: 5));
           
-          ref.invalidate(sourceLawsProvider);
+          ref.invalidate(approvalQueueProvider);
           try {
-            final currentLaws = await ref.read(sourceLawsProvider.future);
-            final targetLaw = currentLaws.firstWhere((l) => l.lawId == lawId, orElse: () => const SourceLaw(lawId: '', lawName: '', article: '', content: ''));
-            if (targetLaw.isGenerated) {
+            final pendingRequests = await ref.read(approvalQueueProvider.future);
+            final hasNewItems = pendingRequests.any((req) => req.lawReference == lawId);
+            
+            if (hasNewItems) {
               isFinished = true;
               break;
             }
@@ -93,7 +93,7 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
         await ref.read(approvalActionNotifierProvider.notifier)
             .triggerGeneration(lawId: law.lawId, lawContent: law.content);
         
-        // 해당 조항의 5제 출제가 완료될 때까지 대기 (최대 2.5분 = 5초 x 30회)
+        // 해당 조항의 2제 출제가 완료될 때까지 대기 (최대 2.5분 = 5초 x 30회)
         for (int j = 0; j < 30; j++) {
           await Future.delayed(const Duration(seconds: 5));
 
@@ -104,7 +104,7 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
             final hasNewItems = pendingRequests.any((req) => req.lawReference == law.lawId);
             
             if (hasNewItems) {
-              break; // 5개(혹은 폴백 1개)가 일괄 저장된 것을 확인, 다음 조항으로 이동
+              break; // 2개(혹은 폴백 1개)가 일괄 저장된 것을 확인, 다음 조항으로 이동
             }
           } catch (_) {}
         }
