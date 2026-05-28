@@ -75,6 +75,7 @@ public class ApprovalService {
                 approvalTransactionHelper.deletePendingRequests(request.lawId());
                 
                 java.util.List<String> previousQuestions = new java.util.ArrayList<>();
+                java.util.List<FastApiGenerateResponse> successfulResponses = new java.util.ArrayList<>();
                 int successCount = 0;
 
                 for (int i = 0; i < 5; i++) {
@@ -94,8 +95,8 @@ public class ApprovalService {
                             throw new RuntimeException("AI Engine returned failure status: " + statusMsg);
                         }
 
-                        // 부분 성공 허용: 성공한 문제는 즉시 저장
-                        approvalTransactionHelper.saveProposedContent(curriculum, request, response);
+                        // 나중에 한 번에 저장하기 위해 리스트에 수집 (프론트엔드 폴링 조기 종료 방지)
+                        successfulResponses.add(response);
                         successCount++;
                         
                         // 다음 퀴즈 출제 시 중복 방지를 위해 질문 컨텍스트 누적
@@ -113,6 +114,11 @@ public class ApprovalService {
                     if (i < 4) {
                         try { Thread.sleep(4000); } catch (InterruptedException ignore) {}
                     }
+                }
+                
+                // 프론트엔드의 폴링 로직이 1건만 생성되어도 완료된 것으로 오인하는 것을 방지하기 위해, 루프 종료 후 일괄 저장
+                for (FastApiGenerateResponse response : successfulResponses) {
+                    approvalTransactionHelper.saveProposedContent(curriculum, request, response);
                 }
                 
                 if (successCount == 0) {

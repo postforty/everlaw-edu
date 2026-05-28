@@ -85,49 +85,36 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
       ),
     );
 
-    // 순차적으로 API 호출 및 20초 딜레이 (Rate Limit 우회)
+    // 순차적으로 API 호출 및 해당 조항 완료 시까지 폴링 대기 (직렬화 보장)
     for (int i = 0; i < selectedSourceLaws.length; i++) {
       final law = selectedSourceLaws[i];
-      if (!context.mounted) break;
       
       try {
         await ref.read(approvalActionNotifierProvider.notifier)
             .triggerGeneration(lawId: law.lawId, lawContent: law.content);
         
-        // 마지막 항목이 아니면 20초 대기
-        if (i < selectedSourceLaws.length - 1) {
-          await Future.delayed(const Duration(seconds: 20));
+        // 해당 조항의 5제 출제가 완료될 때까지 대기 (최대 2.5분 = 5초 x 30회)
+        for (int j = 0; j < 30; j++) {
+          await Future.delayed(const Duration(seconds: 5));
+
+          ref.invalidate(approvalQueueProvider);
+          try {
+            final pendingRequests = await ref.read(approvalQueueProvider.future);
+            // 해당 조항에 대한 PENDING 상태의 출제 건이 DB에 새롭게 등록되었는지 확인
+            final hasNewItems = pendingRequests.any((req) => req.lawReference == law.lawId);
+            
+            if (hasNewItems) {
+              break; // 5개(혹은 폴백 1개)가 일괄 저장된 것을 확인, 다음 조항으로 이동
+            }
+          } catch (_) {}
         }
       } catch (e) {
         // 단일 항목 실패 시 무시하고 다음으로 진행
       }
     }
 
-    if (!context.mounted) return;
-
     // 선택 초기화
     ref.read(selectedLawsProvider.notifier).state = <String>{};
-
-    // 비동기 롱 폴링 (최대 5분 = 10초 x 30회)
-    bool allFinished = false;
-    for (int i = 0; i < 30; i++) {
-      await Future.delayed(const Duration(seconds: 10));
-      if (!context.mounted) break;
-
-      ref.invalidate(sourceLawsProvider);
-      try {
-        final currentLaws = await ref.read(sourceLawsProvider.future);
-        final stillGenerating = selectedIds.where((id) {
-          final targetLaw = currentLaws.firstWhere((l) => l.lawId == id, orElse: () => const SourceLaw(lawId: '', lawName: '', article: '', content: ''));
-          return !targetLaw.isGenerated;
-        }).toList();
-
-        if (stillGenerating.isEmpty) {
-          allFinished = true;
-          break;
-        }
-      } catch (_) {}
-    }
 
     // 상태 정리
     ref.read(generatingLawsProvider.notifier).update((state) {
@@ -136,7 +123,8 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
       return newState;
     });
 
-    if (context.mounted && allFinished) {
+    // 화면이 아직 떠있을 때만 스낵바 표시
+    if (context.mounted) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('일괄 출제가 모두 완료되었습니다! 승인 대기열을 확인해주세요.'),

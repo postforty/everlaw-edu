@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.edu_client"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

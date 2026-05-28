@@ -145,20 +145,44 @@
     },
     {
       "name": "connectivity_plus",
-      "version": "5.0.2",
+      "version": "7.1.1",
       "dependencies": [
+        "collection",
         "connectivity_plus_platform_interface",
         "flutter",
         "flutter_web_plugins",
-        "js",
         "meta",
-        "nm"
+        "nm",
+        "web"
       ]
     },
     {
       "name": "path",
       "version": "1.9.1",
       "dependencies": []
+    },
+    {
+      "name": "sqflite_common_ffi",
+      "version": "2.4.0+3",
+      "dependencies": [
+        "meta",
+        "path",
+        "sqflite_common",
+        "sqlite3",
+        "synchronized"
+      ]
+    },
+    {
+      "name": "sqflite",
+      "version": "2.4.2+1",
+      "dependencies": [
+        "flutter",
+        "path",
+        "sqflite_android",
+        "sqflite_common",
+        "sqflite_darwin",
+        "sqflite_platform_interface"
+      ]
     },
     {
       "name": "google_fonts",
@@ -758,11 +782,73 @@
     },
     {
       "name": "connectivity_plus_platform_interface",
-      "version": "1.2.4",
+      "version": "2.1.0",
       "dependencies": [
         "flutter",
         "meta",
         "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "synchronized",
+      "version": "3.4.0+1",
+      "dependencies": []
+    },
+    {
+      "name": "sqflite_common",
+      "version": "2.5.8",
+      "dependencies": [
+        "meta",
+        "path",
+        "synchronized"
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version": "3.3.2",
+      "dependencies": [
+        "code_assets",
+        "collection",
+        "crypto",
+        "ffi",
+        "hooks",
+        "meta",
+        "native_toolchain_c",
+        "path",
+        "typed_data",
+        "web"
+      ]
+    },
+    {
+      "name": "sqflite_platform_interface",
+      "version": "2.4.0",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "platform",
+        "plugin_platform_interface",
+        "sqflite_common"
+      ]
+    },
+    {
+      "name": "sqflite_darwin",
+      "version": "2.4.2",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "path",
+        "sqflite_common",
+        "sqflite_platform_interface"
+      ]
+    },
+    {
+      "name": "sqflite_android",
+      "version": "2.4.2+3",
+      "dependencies": [
+        "flutter",
+        "path",
+        "sqflite_common",
+        "sqflite_platform_interface"
       ]
     },
     {
@@ -1137,11 +1223,64 @@
       ]
     },
     {
+      "name": "dbus",
+      "version": "0.7.13",
+      "dependencies": [
+        "args",
+        "ffi",
+        "meta",
+        "xml"
+      ]
+    },
+    {
       "name": "plugin_platform_interface",
       "version": "2.1.8",
       "dependencies": [
         "meta"
       ]
+    },
+    {
+      "name": "native_toolchain_c",
+      "version": "0.19.1",
+      "dependencies": [
+        "code_assets",
+        "glob",
+        "hooks",
+        "logging",
+        "meta",
+        "pub_semver"
+      ]
+    },
+    {
+      "name": "code_assets",
+      "version": "1.2.0",
+      "dependencies": [
+        "collection",
+        "hooks"
+      ]
+    },
+    {
+      "name": "hooks",
+      "version": "2.0.0",
+      "dependencies": [
+        "collection",
+        "crypto",
+        "logging",
+        "meta",
+        "pub_semver",
+        "record_use",
+        "yaml"
+      ]
+    },
+    {
+      "name": "ffi",
+      "version": "2.2.0",
+      "dependencies": []
+    },
+    {
+      "name": "platform",
+      "version": "3.1.6",
+      "dependencies": []
     },
     {
       "name": "path_provider_windows",
@@ -1218,11 +1357,6 @@
       ]
     },
     {
-      "name": "ffi",
-      "version": "2.2.0",
-      "dependencies": []
-    },
-    {
       "name": "custom_lint_visitor",
       "version": "1.0.0+7.7.0",
       "dependencies": [
@@ -1247,9 +1381,22 @@
       "dependencies": []
     },
     {
-      "name": "platform",
-      "version": "3.1.6",
-      "dependencies": []
+      "name": "xml",
+      "version": "7.0.1",
+      "dependencies": [
+        "collection",
+        "meta",
+        "petitparser"
+      ]
+    },
+    {
+      "name": "record_use",
+      "version": "0.6.0",
+      "dependencies": [
+        "collection",
+        "meta",
+        "pub_semver"
+      ]
     },
     {
       "name": "xdg_directories",
@@ -1294,157 +1441,11 @@
       ]
     },
     {
-      "name": "hooks",
-      "version": "2.0.0",
-      "dependencies": [
-        "collection",
-        "crypto",
-        "logging",
-        "meta",
-        "pub_semver",
-        "record_use",
-        "yaml"
-      ]
-    },
-    {
-      "name": "code_assets",
-      "version": "1.1.0",
-      "dependencies": [
-        "collection",
-        "hooks"
-      ]
-    },
-    {
-      "name": "record_use",
-      "version": "0.6.0",
-      "dependencies": [
-        "collection",
-        "meta",
-        "pub_semver"
-      ]
-    },
-    {
-      "name": "sqflite",
-      "version": "2.4.2+1",
-      "dependencies": [
-        "flutter",
-        "path",
-        "sqflite_android",
-        "sqflite_common",
-        "sqflite_darwin",
-        "sqflite_platform_interface"
-      ]
-    },
-    {
-      "name": "sqflite_platform_interface",
-      "version": "2.4.0",
-      "dependencies": [
-        "flutter",
-        "meta",
-        "platform",
-        "plugin_platform_interface",
-        "sqflite_common"
-      ]
-    },
-    {
-      "name": "sqflite_darwin",
-      "version": "2.4.2",
-      "dependencies": [
-        "flutter",
-        "meta",
-        "path",
-        "sqflite_common",
-        "sqflite_platform_interface"
-      ]
-    },
-    {
-      "name": "sqflite_android",
-      "version": "2.4.2+3",
-      "dependencies": [
-        "flutter",
-        "path",
-        "sqflite_common",
-        "sqflite_platform_interface"
-      ]
-    },
-    {
-      "name": "sqflite_common",
-      "version": "2.5.8",
-      "dependencies": [
-        "meta",
-        "path",
-        "synchronized"
-      ]
-    },
-    {
-      "name": "dbus",
-      "version": "0.7.13",
-      "dependencies": [
-        "args",
-        "ffi",
-        "meta",
-        "xml"
-      ]
-    },
-    {
-      "name": "xml",
-      "version": "7.0.1",
-      "dependencies": [
-        "collection",
-        "meta",
-        "petitparser"
-      ]
-    },
-    {
       "name": "petitparser",
       "version": "7.0.2",
       "dependencies": [
         "collection",
         "meta"
-      ]
-    },
-    {
-      "name": "synchronized",
-      "version": "3.4.0+1",
-      "dependencies": []
-    },
-    {
-      "name": "sqflite_common_ffi",
-      "version": "2.4.0+3",
-      "dependencies": [
-        "meta",
-        "path",
-        "sqflite_common",
-        "sqlite3",
-        "synchronized"
-      ]
-    },
-    {
-      "name": "sqlite3",
-      "version": "3.3.2",
-      "dependencies": [
-        "code_assets",
-        "collection",
-        "crypto",
-        "ffi",
-        "hooks",
-        "meta",
-        "native_toolchain_c",
-        "path",
-        "typed_data",
-        "web"
-      ]
-    },
-    {
-      "name": "native_toolchain_c",
-      "version": "0.19.0",
-      "dependencies": [
-        "code_assets",
-        "glob",
-        "hooks",
-        "logging",
-        "meta",
-        "pub_semver"
       ]
     }
   ],

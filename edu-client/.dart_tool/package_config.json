@@ -111,7 +111,7 @@
     },
     {
       "name": "code_assets",
-      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/code_assets-1.1.0",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/code_assets-1.2.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -129,15 +129,15 @@
     },
     {
       "name": "connectivity_plus",
-      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/connectivity_plus-5.0.2",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/connectivity_plus-7.1.1",
       "packageUri": "lib/",
-      "languageVersion": "2.18"
+      "languageVersion": "3.2"
     },
     {
       "name": "connectivity_plus_platform_interface",
-      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/connectivity_plus_platform_interface-1.2.4",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/connectivity_plus_platform_interface-2.1.0",
       "packageUri": "lib/",
-      "languageVersion": "2.12"
+      "languageVersion": "2.18"
     },
     {
       "name": "convert",
@@ -501,7 +501,7 @@
     },
     {
       "name": "native_toolchain_c",
-      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/native_toolchain_c-0.19.0",
+      "rootUri": "file:///C:/Users/dandycode/AppData/Local/Pub/Cache/hosted/pub.dev/native_toolchain_c-0.19.1",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
