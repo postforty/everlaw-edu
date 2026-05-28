@@ -13,4 +13,8 @@ public interface QuizBankRepository extends JpaRepository<QuizBank, Long> {
     java.util.Set<String> findAllLawReferences();
 
     java.util.Optional<QuizBank> findByLawReference(String lawReference);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM QuizBank q WHERE q.lawReference = :lawReference")
+    void deleteByLawReference(@org.springframework.data.repository.query.Param("lawReference") String lawReference);
 }

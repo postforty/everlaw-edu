@@ -88,6 +88,11 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> deleteAllNotes() async {
+    Database db = await instance.database;
+    await db.delete(tableIncorrectNote);
+  }
+
   // pendingDelete 상태인 ID 목록 조회
   Future<List<String>> getPendingDeleteIds() async {
     Database db = await instance.database;

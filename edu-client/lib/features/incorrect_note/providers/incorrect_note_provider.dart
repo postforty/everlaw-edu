@@ -135,6 +135,19 @@ class IncorrectNoteNotifier extends StateNotifier<List<IncorrectNote>> {
     }
     return false;
   }
+
+  Future<void> resetHistory() async {
+    try {
+      final response = await _dio.delete('/progress/reset');
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        state = [];
+        await _dbHelper.deleteAllNotes();
+      }
+    } catch (e) {
+      // 에러 발생 시 처리
+      throw Exception('이력 초기화에 실패했습니다.');
+    }
+  }
 }
 
 final incorrectNoteProvider = StateNotifierProvider<IncorrectNoteNotifier, List<IncorrectNote>>((ref) {

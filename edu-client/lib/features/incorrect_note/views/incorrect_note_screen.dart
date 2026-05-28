@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/incorrect_note_provider.dart';
@@ -27,10 +28,11 @@ class IncorrectNoteScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('나의 오답노트', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('나의 오답 노트', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.grey),

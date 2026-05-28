@@ -21,6 +21,9 @@ public class ApprovalTransactionHelper {
 
     private final ApprovalRequestRepository approvalRequestRepository;
     private final ObjectMapper objectMapper;
+    private final com.everlaw.edu.domain.quiz.QuizBankRepository quizBankRepository;
+    private final com.everlaw.edu.domain.progress.MemberIncorrectNoteRepository memberIncorrectNoteRepository;
+    private final com.everlaw.edu.domain.progress.MemberWeaknessIndexRepository memberWeaknessIndexRepository;
 
     /**
      * AI 엔진의 정상 응답 데이터를 트랜잭션 범위 내에서 안전하게 PENDING 상태의 승인 대기열로 적재합니다.
@@ -92,5 +95,13 @@ public class ApprovalTransactionHelper {
     public void deletePendingRequests(String lawReference) {
         approvalRequestRepository.deleteByLawReferenceAndStatus(lawReference, ApprovalStatus.PENDING);
         log.info("🗑️ [Approval Queue] Deleted existing PENDING requests for LawReference: {}", lawReference);
+    }
+
+    @Transactional
+    public void deleteExistingQuizzesAndHistory(String lawReference) {
+        memberIncorrectNoteRepository.deleteByLawReference(lawReference);
+        memberWeaknessIndexRepository.deleteByLawReference(lawReference);
+        quizBankRepository.deleteByLawReference(lawReference);
+        log.info("🗑️ [Quiz Data] Deleted existing quizzes and history for LawReference: {}", lawReference);
     }
 }

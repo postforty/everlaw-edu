@@ -83,7 +83,7 @@ class _StandaloneQuizCardState extends State<StandaloneQuizCard> with SingleTick
               Icon(Icons.psychology_rounded, color: theme.colorScheme.primary, size: 28),
               const SizedBox(width: 12),
               Text(
-                '일일 실전 모의고사',
+                '실전 모의고사',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

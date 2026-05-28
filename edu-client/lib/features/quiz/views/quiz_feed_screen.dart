@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/quiz_bank_provider.dart';
@@ -21,6 +22,47 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
   final Map<int, bool> _answeredMap = {};
+
+  void _showResetConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('⚠️ 이력 초기화', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('지금까지의 모든 문제 풀이 내역과 오답 노트가 영구적으로 삭제됩니다.\n\n정말 초기화하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(incorrectNoteProvider.notifier).resetHistory();
+                ref.invalidate(quizBankProvider);
+                setState(() {
+                  _currentIndex = 0;
+                  _answeredMap.clear();
+                });
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('이력이 성공적으로 초기화되었습니다.'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('초기화 실패: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('초기화', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _onAnswerSelected(BuildContext context, bool isCorrect, int selectedIndex, int index, var quizList) {
     final quiz = quizList[index];
@@ -55,7 +97,7 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
                   Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Expanded(
-                    child: Text('오늘의 모의고사를 모두 완료했습니다!'),
+                    child: Text('준비된 모의고사를 모두 완료했습니다!'),
                   ),
                 ],
               ),
@@ -89,17 +131,53 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
     return quizzesAsync.when(
       data: (quizzes) {
         if (quizzes.isEmpty) {
-          return const Scaffold(
-            body: Center(child: Text('출제된 문제가 없습니다.')),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              systemOverlayStyle: SystemUiOverlayStyle.dark,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+                  tooltip: '이력 초기화',
+                  onPressed: () => _showResetConfirmation(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, color: Colors.blue),
+                  tooltip: '새로고침',
+                  onPressed: () => ref.invalidate(quizBankProvider),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            body: const Center(child: Text('출제된 문제가 없습니다. 새로고침을 눌러 새로운 문제를 확인하세요.')),
           );
         }
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('오늘의 모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text('모의고사 피드', style: TextStyle(fontWeight: FontWeight.bold)),
             backgroundColor: Colors.transparent,
             elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+                tooltip: '이력 초기화',
+                onPressed: () => _showResetConfirmation(context),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Colors.blue),
+                tooltip: '새로고침',
+                onPressed: () {
+                  ref.invalidate(quizBankProvider);
+                  setState(() {
+                    _currentIndex = 0;
+                    _answeredMap.clear();
+                  });
+                },
+              ),
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8.0),
@@ -155,7 +233,7 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
                             Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
                             SizedBox(width: 8),
                             Expanded(
-                              child: Text('오늘의 모의고사를 모두 완료했습니다!'),
+                              child: Text('준비된 모의고사를 모두 완료했습니다!'),
                             ),
                           ],
                         ),
@@ -173,7 +251,25 @@ class _QuizFeedScreenState extends ConsumerState<QuizFeedScreen> {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => Scaffold(
-        body: Center(child: Text('오류가 발생했습니다: $error')),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+              tooltip: '이력 초기화',
+              onPressed: () => _showResetConfirmation(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.blue),
+              tooltip: '다시 시도',
+              onPressed: () => ref.invalidate(quizBankProvider),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Center(child: Text('오류가 발생했습니다:\n$error', textAlign: TextAlign.center)),
       ),
     );
   }

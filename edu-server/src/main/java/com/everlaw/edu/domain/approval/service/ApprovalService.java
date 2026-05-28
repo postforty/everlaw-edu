@@ -71,8 +71,9 @@ public class ApprovalService {
         // 2. 비동기 HTTP 호출 파이프라인 기동
         return CompletableFuture.runAsync(() -> {
             try {
-                // 기존 대기열의 PENDING 항목 선삭제 (덮어쓰기 로직 대신 클렌징 후 5개 신규 삽입)
+                // 기존 대기열의 PENDING 항목 선삭제 및 연관된 기존 퀴즈와 이력 클렌징
                 approvalTransactionHelper.deletePendingRequests(request.lawId());
+                approvalTransactionHelper.deleteExistingQuizzesAndHistory(request.lawId());
                 
                 java.util.List<String> previousQuestions = new java.util.ArrayList<>();
                 java.util.List<FastApiGenerateResponse> successfulResponses = new java.util.ArrayList<>();
@@ -170,29 +171,18 @@ public class ApprovalService {
                 try {
                     Map<String, Object> quizData = objectMapper.readValue(request.getQuizPayload(), Map.class);
                     
-                    QuizBank existingQuiz = quizBankRepository.findByLawReference(request.getLawReference()).orElse(null);
-                    if (existingQuiz != null) {
-                        existingQuiz.updateQuiz(
-                            (String) quizData.get("question"),
-                            (List<String>) quizData.get("options"),
-                            (Integer) quizData.get("answerIndex"),
-                            (String) quizData.get("hint"),
-                            (String) quizData.get("explanation")
-                        );
-                        log.info("📝 [QuizBank] Upserted (Overwritten) structured quiz for LawReference: {}", request.getLawReference());
-                    } else {
-                        QuizBank quiz = QuizBank.builder()
-                                .lesson(lesson)
-                                .lawReference(request.getLawReference())
-                                .question((String) quizData.get("question"))
-                                .options((List<String>) quizData.get("options"))
-                                .answerIndex((Integer) quizData.get("answerIndex"))
-                                .hint((String) quizData.get("hint"))
-                                .explanation((String) quizData.get("explanation"))
-                                .build();
-                        quizBankRepository.save(quiz);
-                        log.info("📝 [QuizBank] Saved new structured quiz for Lesson ID: {}", lesson.getId());
-                    }
+                    // 기존 덮어쓰기 로직 제거: 다중 문제 출제를 위해 무조건 새 레코드로 추가
+                    QuizBank quiz = QuizBank.builder()
+                            .lesson(lesson)
+                            .lawReference(request.getLawReference())
+                            .question((String) quizData.get("question"))
+                            .options((List<String>) quizData.get("options"))
+                            .answerIndex((Integer) quizData.get("answerIndex"))
+                            .hint((String) quizData.get("hint"))
+                            .explanation((String) quizData.get("explanation"))
+                            .build();
+                    quizBankRepository.save(quiz);
+                    log.info("📝 [QuizBank] Saved new structured quiz for Lesson ID: {}", lesson.getId());
                 } catch (Exception e) {
                     log.error("Failed to deserialize and save quiz data", e);
                 }

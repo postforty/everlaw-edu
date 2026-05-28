@@ -49,4 +49,11 @@ public class ProgressController {
         progressService.deleteIncorrectNote(email, noteId);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/reset")
+    public ResponseEntity<Void> resetProgress(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String email) {
+        progressService.resetProgress(email);
+        return ResponseEntity.noContent().build();
+    }
 }

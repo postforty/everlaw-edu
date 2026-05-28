@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/approval_provider.dart';
 import '../models/source_law.dart';
@@ -145,6 +146,7 @@ class QuizGenerationFactoryScreen extends ConsumerWidget {
         title: const Text('문제 출제소', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         actions: [
           sourceLawsAsync.when(
             data: (laws) {

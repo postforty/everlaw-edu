@@ -150,4 +150,16 @@ public class ProgressService {
             }
         });
     }
+
+    @Transactional
+    public void resetProgress(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Long memberId = member.getId();
+        
+        incorrectNoteRepository.deleteByMemberId(memberId);
+        weaknessIndexRepository.deleteByMemberId(memberId);
+        
+        log.info("Member {} has reset their progress history", memberId);
+    }
 }

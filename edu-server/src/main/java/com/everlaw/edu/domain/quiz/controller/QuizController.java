@@ -17,6 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.everlaw.edu.domain.member.MemberRepository;
+import com.everlaw.edu.domain.progress.MemberWeaknessIndexRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -26,14 +32,27 @@ public class QuizController {
 
     private final QuizBankRepository quizBankRepository;
     private final AdaptiveQuizService adaptiveQuizService;
+    private final MemberRepository memberRepository;
+    private final MemberWeaknessIndexRepository weaknessIndexRepository;
 
     @GetMapping
-    public ResponseEntity<List<QuizResponseDto>> getQuizzes() {
-        log.info("📡 [GET /quizzes] Fetching quiz feed");
+    public ResponseEntity<List<QuizResponseDto>> getQuizzes(@AuthenticationPrincipal String email) {
+        log.info("📡 [GET /quizzes] Fetching quiz feed for: {}", email);
         
         List<QuizBank> quizzes = quizBankRepository.findAll();
         
-        List<QuizResponseDto> response = quizzes.stream().map(quiz -> {
+        Set<String> attemptedLawRefs = new HashSet<>();
+        if (email != null && !email.equals("anonymousUser")) {
+            memberRepository.findByEmail(email).ifPresent(member -> {
+                weaknessIndexRepository.findByMemberId(member.getId()).forEach(wi -> {
+                    attemptedLawRefs.add(wi.getLawReference());
+                });
+            });
+        }
+        
+        List<QuizResponseDto> response = quizzes.stream()
+                .sorted(Comparator.comparing(q -> attemptedLawRefs.contains(q.getLawReference())))
+                .map(quiz -> {
             String correctAnswer = quiz.getOptions().size() > quiz.getAnswerIndex() 
                     ? quiz.getOptions().get(quiz.getAnswerIndex()) 
                     : "";

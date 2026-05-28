@@ -18,4 +18,12 @@ public interface MemberIncorrectNoteRepository extends JpaRepository<MemberIncor
     @Modifying
     @Query("UPDATE MemberIncorrectNote m SET m.isArchived = true WHERE m.member.id = :memberId AND m.lawReference = :lawReference AND m.isArchived = false")
     void archiveByMemberIdAndLawReference(@Param("memberId") Long memberId, @Param("lawReference") String lawReference);
+    
+    @Modifying
+    @Query("DELETE FROM MemberIncorrectNote m WHERE m.member.id = :memberId")
+    void deleteByMemberId(@Param("memberId") Long memberId);
+
+    @Modifying
+    @Query("DELETE FROM MemberIncorrectNote m WHERE m.lawReference = :lawReference")
+    void deleteByLawReference(@Param("lawReference") String lawReference);
 }
