@@ -5,6 +5,9 @@ import com.everlaw.edu.domain.member.MemberRepository;
 import com.everlaw.edu.domain.member.dto.AuthResponse;
 import com.everlaw.edu.domain.member.dto.LoginRequest;
 import com.everlaw.edu.domain.member.dto.SignUpRequest;
+import com.everlaw.edu.domain.member.dto.TokenRefreshRequest;
+import com.everlaw.edu.domain.member.entity.RefreshToken;
+import com.everlaw.edu.domain.member.repository.RefreshTokenRepository;
 import com.everlaw.edu.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,7 @@ import java.util.UUID;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -61,7 +65,15 @@ public class MemberService {
 
         // 가입 완료 즉시 로그인을 위해 토큰 함께 리턴
         String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
-        return new AuthResponse(token, member.getEmail(), member.getRole(), member.getJobCategory());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getEmail());
+        
+        refreshTokenRepository.save(new RefreshToken(
+                member.getEmail(), 
+                refreshToken, 
+                jwtTokenProvider.getRefreshTokenValidityInSeconds()
+        ));
+
+        return new AuthResponse(token, refreshToken, member.getEmail(), member.getRole(), member.getJobCategory());
     }
 
     /**
@@ -83,7 +95,15 @@ public class MemberService {
                 member.getEmail(), member.getRole());
                 
         String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
-        return new AuthResponse(token, member.getEmail(), member.getRole(), member.getJobCategory());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getEmail());
+
+        refreshTokenRepository.save(new RefreshToken(
+                member.getEmail(),
+                refreshToken,
+                jwtTokenProvider.getRefreshTokenValidityInSeconds()
+        ));
+
+        return new AuthResponse(token, refreshToken, member.getEmail(), member.getRole(), member.getJobCategory());
     }
 
     /**
@@ -133,6 +153,47 @@ public class MemberService {
                 member.getEmail(), member.getRole());
 
         String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
-        return new AuthResponse(token, member.getEmail(), member.getRole(), member.getJobCategory());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getEmail());
+
+        refreshTokenRepository.save(new RefreshToken(
+                member.getEmail(),
+                refreshToken,
+                jwtTokenProvider.getRefreshTokenValidityInSeconds()
+        ));
+
+        return new AuthResponse(token, refreshToken, member.getEmail(), member.getRole(), member.getJobCategory());
+    }
+
+    /**
+     * Refresh Token을 검증하고 새로운 Access Token과 Refresh Token을 재발급합니다.
+     */
+    @Transactional
+    public AuthResponse reissueToken(TokenRefreshRequest request) {
+        log.info("🔄 [Member Service] Token reissue request");
+
+        String requestRefreshToken = request.refreshToken();
+
+        if (!jwtTokenProvider.validateToken(requestRefreshToken)) {
+            throw new BadCredentialsException("Invalid refresh token.");
+        }
+
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByRefreshToken(requestRefreshToken)
+                .orElseThrow(() -> new BadCredentialsException("Refresh token not found."));
+
+        Member member = memberRepository.findByEmail(refreshTokenEntity.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("User not found for the given refresh token."));
+
+        String newAccessToken = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
+        String newRefreshTokenStr = jwtTokenProvider.createRefreshToken(member.getEmail());
+
+        refreshTokenRepository.save(new RefreshToken(
+                member.getEmail(),
+                newRefreshTokenStr,
+                jwtTokenProvider.getRefreshTokenValidityInSeconds()
+        ));
+
+        log.info("✅ [Member Service] Successfully reissued token for email: {}", member.getEmail());
+
+        return new AuthResponse(newAccessToken, newRefreshTokenStr, member.getEmail(), member.getRole(), member.getJobCategory());
     }
 }

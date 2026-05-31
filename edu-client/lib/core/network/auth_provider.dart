@@ -30,9 +30,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final token = response.data['token'] as String;
+        final refreshToken = response.data['refreshToken'] as String;
         final role = response.data['role'] as String;
         final emailStr = response.data['email'] as String;
         await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRefreshToken(refreshToken);
         await AuthInterceptor.saveRole(role);
         currentUserRole = role;
         currentUserEmail = emailStr;
@@ -64,9 +66,11 @@ class AuthService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final token = response.data['token'] as String;
+        final refreshToken = response.data['refreshToken'] as String;
         final userRole = response.data['role'] as String;
         final emailStr = response.data['email'] as String;
         await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRefreshToken(refreshToken);
         await AuthInterceptor.saveRole(userRole);
         currentUserRole = userRole;
         currentUserEmail = emailStr;
@@ -126,9 +130,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final token = response.data['token'] as String;
+        final refreshToken = response.data['refreshToken'] as String;
         final role = response.data['role'] as String;
         final emailStr = response.data['email'] as String;
         await AuthInterceptor.saveToken(token);
+        await AuthInterceptor.saveRefreshToken(refreshToken);
         await AuthInterceptor.saveRole(role);
         currentUserRole = role;
         currentUserEmail = emailStr;

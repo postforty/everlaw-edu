@@ -18,13 +18,16 @@ public class JwtTokenProvider {
 
     private final SecretKey secretKey;
     private final long tokenValidityInMilliseconds;
+    private final long refreshTokenValidityInMilliseconds;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long tokenValidityInMilliseconds) {
+            @Value("${jwt.expiration}") long tokenValidityInMilliseconds,
+            @Value("${jwt.refresh-expiration}") long refreshTokenValidityInMilliseconds) {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
         this.tokenValidityInMilliseconds = tokenValidityInMilliseconds;
+        this.refreshTokenValidityInMilliseconds = refreshTokenValidityInMilliseconds;
     }
 
     /**
@@ -41,6 +44,25 @@ public class JwtTokenProvider {
                 .expiration(validity)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    /**
+     * Refresh Token을 발행합니다. (Claims 없이 이메일만 저장)
+     */
+    public String createRefreshToken(String email) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + this.refreshTokenValidityInMilliseconds);
+
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(now)
+                .expiration(validity)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public long getRefreshTokenValidityInSeconds() {
+        return refreshTokenValidityInMilliseconds / 1000;
     }
 
     /**

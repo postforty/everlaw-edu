@@ -52,4 +52,14 @@ public class AuthController {
         AuthResponse response = memberService.googleLogin(request);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * [토큰 갱신 API] Refresh Token을 이용해 새로운 Access Token 및 Refresh Token을 발급받습니다.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody com.everlaw.edu.domain.member.dto.TokenRefreshRequest request) {
+        log.info("📡 [POST /auth/refresh] Token reissue requested");
+        AuthResponse response = memberService.reissueToken(request);
+        return ResponseEntity.ok(response);
+    }
 }

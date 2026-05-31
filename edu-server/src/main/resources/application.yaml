@@ -29,8 +29,10 @@ ai-engine:
 
 jwt:
   secret: ${JWT_SECRET}
-  # 1일 (86400000 밀리초)
+  # Access Token 1일 (86400000 밀리초)
   expiration: ${JWT_EXPIRATION:86400000}
+  # Refresh Token 14일 (1209600000 밀리초)
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000}
 
 oauth2:
   google:
