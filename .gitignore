@@ -1,3 +1,5 @@
 .env
 run-server.bat
 run-server.ps1
+client_secret.json
+client_secret_android.json

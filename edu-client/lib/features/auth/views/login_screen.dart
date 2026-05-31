@@ -42,20 +42,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _googleLogin() async {
     setState(() => _isLoading = true);
     
-    final success = await ref.read(authServiceProvider).googleLogin();
+    try {
+      final success = await ref.read(authServiceProvider).googleLogin();
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      if (!mounted) return;
 
-    if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainTabScreen()),
-      );
-    } else {
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainTabScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구글 로그인이 취소되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('구글 소셜 로그인에 실패했습니다.')),
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red.shade600,
+        ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

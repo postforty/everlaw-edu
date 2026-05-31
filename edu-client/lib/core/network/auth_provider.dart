@@ -153,7 +153,7 @@ class AuthService {
       final String? idToken = auth.idToken;
 
       if (idToken == null) {
-        return false;
+        throw Exception('구글 인증 토큰을 가져올 수 없습니다.');
       }
 
       // 서버의 구글 로그인 API 호출
@@ -176,8 +176,11 @@ class AuthService {
         currentUserEmail = emailStr;
         return true;
       }
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? '서버 통신 중 오류가 발생했습니다.');
     } catch (e) {
-      return false;
+      if (e.toString().contains('Exception:')) rethrow;
+      throw Exception('구글 로그인 처리 중 알 수 없는 오류가 발생했습니다.');
     }
     return false;
   }
