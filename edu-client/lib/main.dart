@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,13 +103,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.15),
-              ),
-              // Use standard blur if ImageFilter is not imported, or we can use a simpler approach
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  boxShadow: [BoxShadow(color: AppColors.primary, blurRadius: 200, spreadRadius: 50)],
-                ),
+                color: AppColors.primary.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -120,13 +115,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.deepPurpleAccent.withValues(alpha: 0.1),
+                color: Colors.deepPurpleAccent.withValues(alpha: 0.4),
               ),
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  boxShadow: [BoxShadow(color: Colors.deepPurpleAccent, blurRadius: 150, spreadRadius: 20)],
-                ),
-              ),
+            ),
+          ),
+          // Apply BackdropFilter to smooth out gradients and prevent banding (Moire effect)
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+              child: const SizedBox(),
             ),
           ),
           // Main Content
@@ -140,10 +137,30 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // App Logo
-                    Image.asset(
-                      'assets/images/logo.png',
-                      height: 190,
-                      fit: BoxFit.contain,
+                    // App Logo with Aura Effect
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          // Inner light aura
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            blurRadius: 50,
+                            spreadRadius: 10,
+                          ),
+                          // Outer primary color aura
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 80,
+                            spreadRadius: 20,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 190,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 50),
                     // Typography
