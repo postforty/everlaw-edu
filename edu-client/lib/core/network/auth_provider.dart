@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dio_provider.dart';
 import 'auth_interceptor.dart';
 
@@ -85,9 +86,44 @@ class AuthService {
   /// 저장된 토큰이 있는지 검증하여 자동 로그인 처리
   Future<bool> checkAutoLogin() async {
     final token = await AuthInterceptor.getToken();
+    final refreshToken = await AuthInterceptor.getRefreshToken();
+
     if (token != null && token.isNotEmpty) {
-      currentUserRole = await AuthInterceptor.getRole();
-      return true;
+      if (JwtDecoder.isExpired(token)) {
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          try {
+            final response = await _dio.post(
+              '/auth/refresh',
+              data: {'refreshToken': refreshToken},
+            );
+
+            if (response.statusCode == 200) {
+              final newAccessToken = response.data['token'];
+              final newRefreshToken = response.data['refreshToken'];
+              final role = response.data['role'];
+              final emailStr = response.data['email'];
+
+              if (newAccessToken != null && newRefreshToken != null) {
+                await AuthInterceptor.saveToken(newAccessToken);
+                await AuthInterceptor.saveRefreshToken(newRefreshToken);
+                if (role != null) await AuthInterceptor.saveRole(role);
+                
+                currentUserRole = role ?? await AuthInterceptor.getRole();
+                currentUserEmail = emailStr;
+                return true;
+              }
+            }
+          } catch (e) {
+            await logout();
+            return false;
+          }
+        }
+        await logout();
+        return false;
+      } else {
+        currentUserRole = await AuthInterceptor.getRole();
+        return true;
+      }
     }
     return false;
   }

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/shared_preferences_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/navigation/navigator_key.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'EverLaw Edu',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

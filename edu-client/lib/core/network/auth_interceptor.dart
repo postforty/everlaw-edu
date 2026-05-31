@@ -1,7 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:edu_client/core/navigation/navigator_key.dart';
+import 'package:edu_client/features/auth/views/login_screen.dart';
 
 class AuthInterceptor extends Interceptor {
+  bool _isRefreshing = false;
+  final List<Map<String, dynamic>> _failedRequests = [];
+
   /// 보안 토큰 읽기
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,6 +75,14 @@ class AuthInterceptor extends Interceptor {
         return super.onError(err, handler);
       }
 
+      if (_isRefreshing) {
+        // 이미 갱신 중이라면 큐에 담아 대기
+        _failedRequests.add({'err': err, 'handler': handler});
+        return;
+      }
+
+      _isRefreshing = true;
+
       final refreshToken = await getRefreshToken();
       if (refreshToken != null && refreshToken.isNotEmpty) {
         try {
@@ -86,12 +100,35 @@ class AuthInterceptor extends Interceptor {
               await saveToken(newAccessToken);
               await saveRefreshToken(newRefreshToken);
 
-              // 이전 요청 재시도
+              // 현재 실패한 원래 요청 재시도
               final retryOptions = err.requestOptions;
               retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
               
-              final retryResponse = await dio.fetch(retryOptions);
-              return handler.resolve(retryResponse);
+              try {
+                final retryResponse = await dio.fetch(retryOptions);
+                handler.resolve(retryResponse);
+              } catch(e) {
+                handler.reject(err);
+              }
+
+              // 큐에 쌓인 나머지 요청들도 일괄 재시도
+              for (var request in _failedRequests) {
+                final failedErr = request['err'] as DioException;
+                final failedHandler = request['handler'] as ErrorInterceptorHandler;
+                
+                final retryFailedOptions = failedErr.requestOptions;
+                retryFailedOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+                
+                try {
+                  final response = await dio.fetch(retryFailedOptions);
+                  failedHandler.resolve(response);
+                } catch (e) {
+                  failedHandler.reject(failedErr);
+                }
+              }
+              _failedRequests.clear();
+              _isRefreshing = false;
+              return;
             }
           }
         } catch (e) {
@@ -100,8 +137,17 @@ class AuthInterceptor extends Interceptor {
       }
 
       // 리프레시 실패하거나 토큰이 없는 경우 강제 로그아웃
+      _failedRequests.clear();
+      _isRefreshing = false;
       await deleteToken();
-      // TODO: 앱 라우팅 엔진(GoRouter 등)을 통해 로그인 화면으로 리다이렉트 처리 구현 예정
+      
+      // 앱 라우팅 엔진(전역 네비게이터)을 통해 로그인 화면으로 즉시 리다이렉트
+      if (rootNavigatorKey.currentState != null) {
+        rootNavigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
     }
     return super.onError(err, handler);
   }
