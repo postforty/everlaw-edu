@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/auth_provider.dart';
 import '../../main/views/main_tab_screen.dart';
-import 'signup_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -12,32 +11,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   bool _isLoading = false;
-
-  Future<void> _login() async {
-    setState(() => _isLoading = true);
-    
-    final success = await ref.read(authServiceProvider).login(
-      _emailController.text,
-      _passwordController.text,
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainTabScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인에 실패했습니다.')),
-      );
-    }
-  }
 
   Future<void> _googleLogin() async {
     setState(() => _isLoading = true);
@@ -75,58 +49,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('로그인')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: '이메일'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: '비밀번호'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 32),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                        child: const Text('이메일로 로그인'),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: _googleLogin,
-                        icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                        label: const Text('Google로 시작하기'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                          foregroundColor: Colors.red.shade700,
-                          side: BorderSide(color: Colors.red.shade200),
-                        ),
-                      ),
-                    ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 120,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  '환영합니다',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                   ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                );
-              },
-              child: const Text('계정이 없으신가요? 회원가입'),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'EverLaw Edu와 함께\n최신 법령 학습을 시작하세요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton.icon(
+                        onPressed: _googleLogin,
+                        icon: const Icon(Icons.g_mobiledata_rounded, size: 36, color: Colors.black87),
+                        label: const Text(
+                          'Google 계정으로 계속하기',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 56),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

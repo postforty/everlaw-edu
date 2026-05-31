@@ -63,21 +63,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Future<void> _startInitialization() async {
-    // 1단계: 스플래시 대기 (1초)
     await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
     setState(() {
       _statusText = '학습 데이터베이스 연동 중...';
     });
 
-    // 백그라운드 로그인 동기화
     final isLoggedIn = await ref.read(authServiceProvider).checkAutoLogin();
 
-    // 2단계: 추가 대기 후 메인 화면 자동 이동
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
 
-    // 스플래시 화면이므로 뒤로 가기 불가능하게 pushReplacement 사용
     if (isLoggedIn) {
       Navigator.pushReplacement(
         context,
@@ -91,100 +87,120 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary,
-              AppColors.secondary,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 1000),
-                opacity: _isVisible ? 1.0 : 0.0,
-                curve: Curves.easeOut,
-                child: AnimatedScale(
-                  duration: const Duration(milliseconds: 1200),
-                  scale: _isVisible ? 1.0 : 0.9,
-                  curve: Curves.easeOutCubic,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
-                          ),
-                          child: const Icon(
-                            Icons.gavel_rounded,
-                            size: 80,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        const Text(
-                          'EverLaw Edu',
-                          style: TextStyle(
-                            fontSize: 38,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '최신 법령 DB 기반 지능형 교육 및 컴플라이언스 솔루션',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 60),
-                        SizedBox(
-                          height: 40,
-                          width: 40,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.9)),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          _statusText,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      backgroundColor: AppColors.secondary,
+      body: Stack(
+        children: [
+          // Background Glows
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.15),
+              ),
+              // Use standard blur if ImageFilter is not imported, or we can use a simpler approach
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  boxShadow: [BoxShadow(color: AppColors.primary, blurRadius: 200, spreadRadius: 50)],
                 ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            bottom: -50,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.deepPurpleAccent.withValues(alpha: 0.1),
+              ),
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  boxShadow: [BoxShadow(color: Colors.deepPurpleAccent, blurRadius: 150, spreadRadius: 20)],
+                ),
+              ),
+            ),
+          ),
+          // Main Content
+          SafeArea(
+            child: Center(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 1200),
+                opacity: _isVisible ? 1.0 : 0.0,
+                curve: Curves.easeOutCubic,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // App Logo
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 190,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 50),
+                    // Typography
+                    Text(
+                      'EverLaw Edu',
+                      style: TextStyle(
+                        fontFamily: 'Outfit', // Or fallback to standard
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '차세대 지능형 법률 교육 플랫폼',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 70),
+                    // Elegant Loading Indicator
+                    SizedBox(
+                      width: 160,
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.7)),
+                              minHeight: 3,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _statusText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-
 }

@@ -18,70 +18,7 @@ class AuthService {
 
   AuthService(this._dio);
 
-  /// 이메일/비밀번호 기반 실제 로그인
-  Future<bool> login(String email, String password) async {
-    try {
-      final response = await _dio.post(
-        '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
 
-      if (response.statusCode == 200) {
-        final token = response.data['token'] as String;
-        final refreshToken = response.data['refreshToken'] as String;
-        final role = response.data['role'] as String;
-        final emailStr = response.data['email'] as String;
-        await AuthInterceptor.saveToken(token);
-        await AuthInterceptor.saveRefreshToken(refreshToken);
-        await AuthInterceptor.saveRole(role);
-        currentUserRole = role;
-        currentUserEmail = emailStr;
-        return true;
-      }
-    } catch (e) {
-      return false;
-    }
-    return false;
-  }
-
-  /// 이메일/비밀번호 기반 회원가입
-  Future<bool> signup({
-    required String email,
-    required String password,
-    required String role,
-    required String jobCategory,
-  }) async {
-    try {
-      final response = await _dio.post(
-        '/auth/signup',
-        data: {
-          'email': email,
-          'password': password,
-          'role': role,
-          'jobCategory': jobCategory,
-        },
-      );
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final token = response.data['token'] as String;
-        final refreshToken = response.data['refreshToken'] as String;
-        final userRole = response.data['role'] as String;
-        final emailStr = response.data['email'] as String;
-        await AuthInterceptor.saveToken(token);
-        await AuthInterceptor.saveRefreshToken(refreshToken);
-        await AuthInterceptor.saveRole(userRole);
-        currentUserRole = userRole;
-        currentUserEmail = emailStr;
-        return true;
-      }
-    } catch (e) {
-      return false;
-    }
-    return false;
-  }
 
   /// 저장된 토큰이 있는지 검증하여 자동 로그인 처리
   Future<bool> checkAutoLogin() async {
