@@ -123,7 +123,7 @@ class IncorrectNoteScreen extends ConsumerWidget {
                 // 오답 리스트
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
                     itemCount: notes.length,
                     itemBuilder: (context, index) {
                       final note = notes[index];
